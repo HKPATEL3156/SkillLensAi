@@ -16,23 +16,23 @@ const Login = () => {
 
   return (
     <Layout>
-      <div className="flex justify-center items-center py-20">
-        <form onSubmit={handle} className="bg-white shadow-lg p-8 rounded-lg w-96 space-y-4">
+      <div className="flex justify-center items-center py-20 bg-gradient-to-r from-blue-50 to-blue-100">
+        <form onSubmit={handle} className="bg-white shadow-xl p-10 rounded-xl w-96 space-y-5 hover:shadow-2xl transition duration-300">
 
-          <h2 className="text-2xl font-bold text-blue-600 text-center">login</h2>
+          <h2 className="text-3xl font-bold text-blue-600 text-center">Login</h2>
 
-          <input type="email" placeholder="email"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+          <input type="email" placeholder="Email"
+            className="w-full border p-3 rounded focus:ring-2 focus:ring-blue-500"
             onChange={e=>setData({...data,email:e.target.value})}
           />
 
-          <input type="password" placeholder="password"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+          <input type="password" placeholder="Password"
+            className="w-full border p-3 rounded focus:ring-2 focus:ring-blue-500"
             onChange={e=>setData({...data,password:e.target.value})}
           />
 
-          <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-green-500 transition">
-            login
+          <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-green-500 transition font-semibold">
+            Login
           </button>
 
         </form>

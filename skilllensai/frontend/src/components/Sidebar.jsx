@@ -1,39 +1,76 @@
-import { Link } from "react-router-dom"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   return (
-    <div className="w-64 bg-white shadow-md fixed h-full p-6">
-
-      <h2 className="text-2xl font-bold text-blue-600 mb-10">
-        dashboard
-      </h2>
-
-      <div className="space-y-6 text-gray-700 font-medium">
-
-        <Link to="/dashboard" className="block hover:text-blue-600 transition">
-          home
-        </Link>
-
-        <Link to="#" className="block hover:text-blue-600 transition">
-          resume analysis
-        </Link>
-
-        <Link to="#" className="block hover:text-blue-600 transition">
-          result analysis
-        </Link>
-
-        <Link to="#" className="block hover:text-blue-600 transition">
-          skill quiz
-        </Link>
-
-        <Link to="/" className="block text-red-500 hover:text-red-700 transition">
-          logout
-        </Link>
-
+    <div className="flex">
+      {/* Hamburger Menu */}
+      <div className="bg-blue-600 text-white p-4 cursor-pointer" onClick={toggleSidebar}>
+        ☰
       </div>
 
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 h-full bg-blue-800 text-white w-64 p-6 transition-transform transform ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <h2 className="text-2xl font-bold mb-8">SkillLens AI</h2>
+
+        <ul className="space-y-4">
+          <li
+            className="cursor-pointer hover:bg-blue-700 p-2 rounded"
+            onClick={() => navigate("/dashboard/results")}
+          >
+            My Results
+          </li>
+          <li
+            className="cursor-pointer hover:bg-blue-700 p-2 rounded"
+            onClick={() => navigate("/dashboard/resume")}
+          >
+            My Resume
+          </li>
+          <li
+            className="cursor-pointer hover:bg-blue-700 p-2 rounded"
+            onClick={() => navigate("/dashboard/career-coach")}
+          >
+            Student Career Coach
+          </li>
+          <li
+            className="cursor-pointer hover:bg-blue-700 p-2 rounded"
+            onClick={() => navigate("/dashboard/activity")}
+          >
+            My Activity
+          </li>
+          <li
+            className="cursor-pointer hover:bg-blue-700 p-2 rounded"
+            onClick={() => navigate("/dashboard/settings")}
+          >
+            Settings
+          </li>
+        </ul>
+
+        <button
+          className="mt-8 bg-red-600 hover:bg-red-700 p-2 rounded w-full"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
     </div>
-  )
-}
+  );
+};
 
 export default Sidebar
