@@ -35,11 +35,33 @@ const careerSchema = new mongoose.Schema(
       {
         institution: String,
         degree: String,
-        year: String,
+        fieldOfStudy: String,
+        startYear: Number,
+        endYear: Number,
       },
     ],
 
-    certifications: [String],
+    certifications: [
+      {
+        name: String,
+        issuingOrganization: String,
+        issueDate: Date,
+        expirationDate: Date,
+        credentialId: String,
+        credentialUrl: String,
+      },
+    ],
+
+    projects: [
+      {
+        title: String,
+        description: String,
+        technologies: [String],
+        link: String,
+      },
+    ],
+
+    achievements: [String],
   },
   { timestamps: true }
 );

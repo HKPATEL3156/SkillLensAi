@@ -2,36 +2,43 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const path = require("path");
 
-// Load environment variables
+// load env variables
 dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+// middleware
 app.use(cors());
+app.use(express.json());
 
-// Import routes
+// serve uploaded resume files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// import routes
+const careerRoutes = require("./src/routes/careerRoutes");
 const authRoutes = require("./src/routes/auth.routes");
 
-// filepath: f:\devx\projectdev\sgp\skilllensai\backend\server.js
+// use routes
+app.use("/api/career", careerRoutes);
+app.use("/api/auth", authRoutes);
+
+// connect to mongodb
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB connected successfully");
+    console.log("mongodb connected successfully");
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
-    process.exit(1); // Exit process with failure
+    console.error("mongodb connection failed:", error.message);
+    process.exit(1);
   }
 };
 
-// Routes
-app.use("/api/auth", authRoutes);
-
-// Start the server
+// start server
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  await connectDB(); // Connect to the database when the server starts
+  console.log(`server running on http://localhost:${PORT}`);
+  await connectDB();
 });

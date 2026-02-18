@@ -24,7 +24,7 @@ const DashboardLayout = () => {
         <main
           className={`flex-1 overflow-y-auto p-6 bg-gray-100 transition-all duration-300 ${
             isSidebarOpen ? "ml-64" : "ml-16"
-          } mt-16`}
+          } mt-16 mb-16`} // Added bottom margin to prevent footer overlap
         >
           <Outlet />
         </main>
