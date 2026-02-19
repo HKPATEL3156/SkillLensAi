@@ -3,36 +3,44 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Activity = require("../models/Activity");
-const router = express.Router();
-
-const multer = require("multer");
-
-// Get current user profile
-router.get("/profile", async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching profile" });
-  }
-});
-const path = require("path");
+const {
+  registerValidation,
+  loginValidation,
+} = require("../middleware/validators");
+const { validationResult } = require("express-validator");
 const auth = require("../middleware/auth.middleware");
-
+const path = require("path");
+const multer = require("multer");
+const router = express.Router();
 
 // --- PUBLIC ROUTES (no auth required) ---
 
-// Enhanced Signup Route (with username, dob, qualification, etc.)
-router.post("/signup", async (req, res) => {
-  const { name, email, password, username, dob, qualification, phone, address, gender, bio } = req.body;
+// Signup
+router.post("/signup", registerValidation, async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const {
+    name,
+    email,
+    password,
+    username,
+    dob,
+    qualification,
+    phone,
+    address,
+    gender,
+    bio,
+  } = req.body;
   try {
     // Check if email or username already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ error: "Email or username already exists" });
+      return res
+        .status(400)
+        .json({ error: "Email or username already exists" });
     }
-
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
@@ -48,33 +56,46 @@ router.post("/signup", async (req, res) => {
       bio,
     });
     await newUser.save();
-
     res.status(201).json({ message: "User created successfully" });
   } catch (err) {
-    console.error("Error during user registration:", err);
-    res.status(500).json({ error: "Error creating user" });
+    next(err);
   }
 });
 
 // Login
-router.post("/login", async (req, res) => {
+router.post("/login", loginValidation, async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
     res.status(200).json({ token });
   } catch (err) {
-    res.status(500).json({ error: "Error logging in" });
+    next(err);
   }
 });
 
 // --- PROTECTED ROUTES (require auth) ---
 router.use(auth);
+
+// Get current user profile
+router.get("/profile", async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Multer storage for profile photo (req.user is now available)
 const storage = multer.diskStorage({
@@ -83,7 +104,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
-    cb(null, req.user.id + "_" + Date.now() + ext);
+    cb(null, req.user._id + "_" + Date.now() + ext);
   },
 });
 const upload = multer({
@@ -98,43 +119,62 @@ const upload = multer({
 });
 
 // Get user activity log
-router.get("/activity/me", async (req, res) => {
+router.get("/activity/me", async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const activities = await Activity.find({ userId }).sort({ createdAt: -1 }).limit(20);
+    const userId = req.user._id;
+    const activities = await Activity.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(20);
     res.json(activities);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching activity log" });
+    next(err);
   }
 });
 
 // Change Password
-router.post("/change-password", async (req, res) => {
+router.post("/change-password", async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { old, new: newPassword } = req.body;
-    if (!old || !newPassword) return res.status(400).json({ error: "Both old and new password are required" });
+    if (!old || !newPassword)
+      return res
+        .status(400)
+        .json({ error: "Both old and new password are required" });
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
     const isMatch = await bcrypt.compare(old, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Old password is incorrect" });
+    if (!isMatch)
+      return res.status(401).json({ error: "Old password is incorrect" });
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
     res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Error changing password" });
+    next(err);
   }
 });
 
 // Enhanced Signup Route
 // Enhanced Signup Route (with username, dob, qualification, etc.)
 router.post("/signup", async (req, res) => {
-  const { name, email, password, username, dob, qualification, phone, address, gender, bio } = req.body;
+  const {
+    name,
+    email,
+    password,
+    username,
+    dob,
+    qualification,
+    phone,
+    address,
+    gender,
+    bio,
+  } = req.body;
   try {
     // Check if email or username already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ error: "Email or username already exists" });
+      return res
+        .status(400)
+        .json({ error: "Email or username already exists" });
     }
 
     // Hash password and create user
@@ -170,7 +210,9 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
     res.status(200).json({ token });
   } catch (err) {
     res.status(500).json({ error: "Error logging in" });
@@ -195,7 +237,8 @@ router.get("/dashboard", async (req, res) => {
 
 // Profile Update Route (all fields except email, username)
 router.put("/profile", async (req, res) => {
-  const { name, password, dob, qualification, phone, address, gender, bio } = req.body;
+  const { name, password, dob, qualification, phone, address, gender, bio } =
+    req.body;
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
@@ -215,37 +258,50 @@ router.put("/profile", async (req, res) => {
       updatedData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    });
     // Log activity
     await Activity.create({
       userId,
       type: "profile_update",
       message: `Profile updated`,
     });
-    res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "Profile updated successfully", user: updatedUser });
   } catch (err) {
     res.status(500).json({ error: "Error updating profile" });
   }
 });
 
 // Profile Photo Upload (single, correct implementation)
-router.post("/profile/photo", upload.single("profilePhoto"), async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    user.profilePhoto = `/uploads/profile-photos/${req.file.filename}`;
-    await user.save();
-    // Log activity
-    await Activity.create({
-      userId,
-      type: "profile_photo_upload",
-      message: `Profile photo updated`,
-    });
-    res.status(200).json({ message: "Profile photo updated", profilePhoto: user.profilePhoto });
-  } catch (err) {
-    res.status(500).json({ error: "Error uploading profile photo" });
-  }
-});
+router.post(
+  "/profile/photo",
+  upload.single("profilePhoto"),
+  async (req, res, next) => {
+    try {
+      const userId = req.user._id;
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      user.profilePhoto = `/uploads/profile-photos/${req.file.filename}`;
+      await user.save();
+      // Log activity
+      await Activity.create({
+        userId,
+        type: "profile_photo_upload",
+        message: `Profile photo updated`,
+      });
+      res
+        .status(200)
+        .json({
+          message: "Profile photo updated",
+          profilePhoto: user.profilePhoto,
+        });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 module.exports = router;

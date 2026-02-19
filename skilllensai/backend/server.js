@@ -3,52 +3,54 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
-// load env variables
+// Load env variables
 dotenv.config();
 
 const app = express();
 
-// middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Ensure uploads/resumes and uploads/profile-photos directories exist
-const fs = require("fs");
+// Ensure uploads directories exist
 const resumesDir = path.join(__dirname, "uploads/resumes");
 const profilePhotosDir = path.join(__dirname, "uploads/profile-photos");
-if (!fs.existsSync(resumesDir)) {
-  fs.mkdirSync(resumesDir, { recursive: true });
-}
-if (!fs.existsSync(profilePhotosDir)) {
+if (!fs.existsSync(resumesDir)) fs.mkdirSync(resumesDir, { recursive: true });
+if (!fs.existsSync(profilePhotosDir))
   fs.mkdirSync(profilePhotosDir, { recursive: true });
-}
-// serve uploaded files
+
+// Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// import routes
+// Import routes
 const careerRoutes = require("./src/routes/careerRoutes");
 const authRoutes = require("./src/routes/auth.routes");
 
-// use routes
+// Use routes
 app.use("/api/career", careerRoutes);
 app.use("/api/auth", authRoutes);
 
-// connect to mongodb
+// Centralized error handler
+const errorHandler = require("./src/middleware/errorHandler");
+app.use(errorHandler);
+
+// Connect to MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("mongodb connected successfully");
+    console.log("MongoDB connected successfully");
   } catch (error) {
-    console.error("mongodb connection failed:", error.message);
+    console.error("MongoDB connection failed:", error.message);
     process.exit(1);
   }
 };
 
-// start server
+// Start server
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, async () => {
-  console.log(`server running on http://localhost:${PORT}`);
-  await connectDB();
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 });

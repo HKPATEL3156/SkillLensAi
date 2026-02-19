@@ -5,7 +5,7 @@ const router = express.Router(); // create router
 const Career = require("../models/Career"); // import career model
 const Activity = require("../models/Activity"); // import activity model
 const auth = require("../middleware/auth.middleware"); // auth middleware
-const upload = require("../utils/Upload"); // multer config
+const { resumeUpload } = require("../utils/Upload"); // multer config
 const path = require("path"); // path module
 const fs = require("fs"); // file system
 
@@ -40,7 +40,7 @@ router.post("/me", async (req, res) => {
     const data = await Career.findOneAndUpdate(
       { userId: req.user.id },
       update,
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     );
 
     res.json(data);
@@ -53,90 +53,66 @@ router.post("/me", async (req, res) => {
 });
 
 // multer single file
-const pdfUpload = upload.single("file");
+const pdfUpload = resumeUpload.single("file");
 
 // -----------------------------
-// UPLOAD RESUME
+// UPLOAD RESUME (with ML integration and robust error handling)
 // -----------------------------
-router.post("/upload-resume", (req, res) => {
+router.post("/upload-resume", (req, res, next) => {
   pdfUpload(req, res, async function (err) {
-
     if (err) {
-      return res.status(400).json({
-        message: err.message || "Upload error",
-      });
+      return res.status(400).json({ error: err.message || "Upload error" });
     }
-
     if (!req.file) {
-      return res.status(400).json({
-        message: "No file uploaded",
-      });
+      return res.status(400).json({ error: "No file uploaded" });
     }
-
     if (req.file.mimetype !== "application/pdf") {
-      return res.status(400).json({
-        message: "Only PDF files allowed",
-      });
+      return res.status(400).json({ error: "Only PDF files allowed" });
     }
-
     try {
       // normalize path
       const resumeUrl = req.file.path.replace(/\\/g, "/");
-
       // call ml service
       let extractedSkills = [];
-
       try {
         const mlResponse = await axios.post(
           "http://localhost:8000/extract-skills",
-          {
-            filepath: resumeUrl, // must match fastapi field name
-          }
+          { filepath: resumeUrl },
         );
-
         extractedSkills = mlResponse.data.skills || [];
-
       } catch (mlError) {
-        console.log("ml service error:", mlError.message);
+        return res
+          .status(502)
+          .json({ error: "ML service error", details: mlError.message });
       }
-
       // save resume + skills
       const data = await Career.findOneAndUpdate(
         { userId: req.user.id },
         { resumeUrl, extractedSkills },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { new: true, upsert: true, setDefaultsOnInsert: true },
       );
-
       // log activity
       await Activity.create({
         userId: req.user.id,
         type: "resume_upload",
         message: "Resume uploaded and skills extracted",
       });
-
-      // send response once
       res.json({
         message: "Resume uploaded successfully",
         resumeUrl: data.resumeUrl,
         skills: extractedSkills,
       });
-
     } catch (err) {
-      res.status(500).json({
-        message: "Error processing resume",
-        error: err.message,
-      });
+      next(err);
     }
   });
 });
-
 
 // -----------------------------
 // UPLOAD RESULT
 // -----------------------------
 router.post("/upload-result", (req, res) => {
   pdfUpload(req, res, async function (err) {
-
     if (err) {
       return res.status(400).json({
         message: err.message || "Upload error",
@@ -161,7 +137,7 @@ router.post("/upload-result", (req, res) => {
       const data = await Career.findOneAndUpdate(
         { userId: req.user.id },
         { resultUrl },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { new: true, upsert: true, setDefaultsOnInsert: true },
       );
 
       // log activity
@@ -175,7 +151,6 @@ router.post("/upload-result", (req, res) => {
         message: "Result uploaded successfully",
         resultUrl: data.resultUrl,
       });
-
     } catch (err) {
       res.status(500).json({
         message: "Error saving result",
@@ -190,10 +165,7 @@ router.post("/upload-result", (req, res) => {
 // -----------------------------
 router.get("/download-resume", async (req, res) => {
   try {
-    const data = await Career.findOne(
-      { userId: req.user.id },
-      "resumeUrl"
-    );
+    const data = await Career.findOne({ userId: req.user.id }, "resumeUrl");
 
     if (!data || !data.resumeUrl) {
       return res.status(404).json({
@@ -201,11 +173,7 @@ router.get("/download-resume", async (req, res) => {
       });
     }
 
-    const filePath = path.join(
-      __dirname,
-      "../../",
-      data.resumeUrl
-    );
+    const filePath = path.join(__dirname, "../../", data.resumeUrl);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -214,7 +182,6 @@ router.get("/download-resume", async (req, res) => {
     }
 
     res.download(filePath, path.basename(filePath));
-
   } catch (err) {
     res.status(500).json({
       message: "Error downloading resume",
@@ -228,10 +195,7 @@ router.get("/download-resume", async (req, res) => {
 // -----------------------------
 router.get("/download-result", async (req, res) => {
   try {
-    const data = await Career.findOne(
-      { userId: req.user.id },
-      "resultUrl"
-    );
+    const data = await Career.findOne({ userId: req.user.id }, "resultUrl");
 
     if (!data || !data.resultUrl) {
       return res.status(404).json({
@@ -239,11 +203,7 @@ router.get("/download-result", async (req, res) => {
       });
     }
 
-    const filePath = path.join(
-      __dirname,
-      "../../",
-      data.resultUrl
-    );
+    const filePath = path.join(__dirname, "../../", data.resultUrl);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -252,7 +212,6 @@ router.get("/download-result", async (req, res) => {
     }
 
     res.download(filePath, path.basename(filePath));
-
   } catch (err) {
     res.status(500).json({
       message: "Error downloading result",
@@ -268,7 +227,7 @@ router.get("/skills", async (req, res) => {
   try {
     const data = await Career.findOne(
       { userId: req.user.id },
-      "extractedSkills"
+      "extractedSkills",
     );
 
     if (!data) {
@@ -280,7 +239,6 @@ router.get("/skills", async (req, res) => {
     res.json({
       skills: data.extractedSkills || [],
     });
-
   } catch (err) {
     res.status(500).json({
       message: "Error fetching skills",
@@ -299,14 +257,13 @@ router.post("/select-skills", async (req, res) => {
     const data = await Career.findOneAndUpdate(
       { userId: req.user.id },
       { selectedSkills },
-      { new: true }
+      { new: true },
     );
 
     res.json({
       message: "Selected skills saved",
       selectedSkills: data.selectedSkills,
     });
-
   } catch (err) {
     res.status(500).json({
       message: "Error saving selected skills",
@@ -314,6 +271,5 @@ router.post("/select-skills", async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
