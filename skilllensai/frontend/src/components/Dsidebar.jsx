@@ -95,17 +95,6 @@ const Dsidebar = ({ isOpen }) => {
           <FaCog className="text-xl" />
           {isOpen && <span className="ml-4">Settings</span>}
         </NavLink>
-        <NavLink
-          to="/logout"
-          className={({ isActive }) =>
-            `flex items-center p-2 rounded hover:bg-blue-700 ${
-              isActive ? "bg-blue-700" : ""
-            }`
-          }
-        >
-          <FaSignOutAlt className="text-xl" />
-          {isOpen && <span className="ml-4">Logout</span>}
-        </NavLink>
       </nav>
     </aside>
   );

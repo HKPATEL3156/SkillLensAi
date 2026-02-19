@@ -132,7 +132,7 @@ const Settings = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    nav("/login");
+    window.location.replace("/login");
   };
 
 
@@ -174,6 +174,8 @@ const Settings = () => {
             Upload Photo
           </button>
         </form>
+
+        
       </div>
 
       {/* Profile Info Form */}

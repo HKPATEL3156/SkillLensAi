@@ -1,7 +1,8 @@
 
 const Career = require("../models/Career");
-const path = require("path");
+const User = require("../models/User");
 const fs = require("fs");
+const path = require("path");
 
 // Get current user's career profile
 exports.getCareer = async (req, res) => {
@@ -86,5 +87,43 @@ exports.downloadResult = async (req, res) => {
     res.download(filePath, path.basename(filePath));
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// upload resume controller
+exports.uploadResume = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "no file uploaded" });
+    }
+
+    // backend resume path
+    const backendPath = req.file.path;
+
+    // ml-service upload folder path
+    const mlUploadPath = path.join(
+      __dirname,
+      "../../../ml-service/uploads/",
+      req.file.filename
+    );
+
+    // copy file to ml-service
+    fs.copyFileSync(backendPath, mlUploadPath);
+
+    // save filename in user db
+    const user = await User.findById(userId);
+    user.resume = req.file.filename;
+    await user.save();
+
+    res.json({
+      message: "resume uploaded successfully",
+      filename: req.file.filename,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "server error" });
   }
 };

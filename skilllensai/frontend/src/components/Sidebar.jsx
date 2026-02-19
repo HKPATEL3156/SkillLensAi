@@ -10,8 +10,11 @@ const Sidebar = () => {
   };
 
   const handleLogout = () => {
+    setIsOpen(false);
     localStorage.removeItem("token");
-    navigate("/login");
+    setTimeout(() => {
+      window.location.replace("/login");
+    }, 150);
   };
 
   return (

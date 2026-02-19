@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 const careerSchema = new mongoose.Schema(
   {
     userId: {
@@ -43,8 +42,16 @@ const careerSchema = new mongoose.Schema(
     resultUrl: { type: String },
     careerGoal: { type: String },
     achievements: [String],
+    extractedSkills: {
+      type: [String],
+      default: [],
+    },
+    selectedSkills: {
+      type: [String],
+      default: [],
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Career", careerSchema);
