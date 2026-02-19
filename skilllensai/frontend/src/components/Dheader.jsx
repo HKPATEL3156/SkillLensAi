@@ -1,10 +1,36 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import defaultAvatar from "../assets/default-avatar.svg";
+
 
 const Dheader = ({ toggleSidebar }) => {
   const [openMenu, setOpenMenu] = useState(null);
+  const [user, setUser] = useState({ name: "", profilePhoto: "" });
   const menuRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchUser();
+    // eslint-disable-next-line
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/api/auth/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data?.user || {};
+      setUser({
+        name: data.name || "",
+        profilePhoto: data.profilePhoto || "",
+      });
+    } catch {
+      setUser({ name: "", profilePhoto: "" });
+    }
+  };
 
   // close dropdown when clicking outside
   useEffect(() => {
@@ -100,12 +126,12 @@ const Dheader = ({ toggleSidebar }) => {
             className="flex items-center space-x-2 hover:text-yellow-300 transition duration-200"
           >
             <img
-              src="https://via.placeholder.com/32"
+              src={user.profilePhoto || defaultAvatar}
               alt="Profile"
-              className="w-9 h-9 rounded-full border-2 border-white"
+              className="w-9 h-9 rounded-full border-2 border-white object-cover bg-white"
             />
             <span className="hidden md:block font-medium">
-              John Doe
+              {user.name || "My Profile"}
             </span>
           </button>
 

@@ -13,7 +13,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// serve uploaded resume files
+// Ensure uploads/resumes and uploads/profile-photos directories exist
+const fs = require("fs");
+const resumesDir = path.join(__dirname, "uploads/resumes");
+const profilePhotosDir = path.join(__dirname, "uploads/profile-photos");
+if (!fs.existsSync(resumesDir)) {
+  fs.mkdirSync(resumesDir, { recursive: true });
+}
+if (!fs.existsSync(profilePhotosDir)) {
+  fs.mkdirSync(profilePhotosDir, { recursive: true });
+}
+// serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // import routes

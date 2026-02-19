@@ -1,138 +1,145 @@
+const Activity = require("../models/Activity");
+
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const mongoose = require("mongoose");
 const Career = require("../models/Career");
+const auth = require("../middleware/auth.middleware");
+const upload = require("../utils/Upload");
+const path = require("path");
+const fs = require("fs");
 
-// storage config for resume
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
+// All routes below require authentication
+router.use(auth);
 
-const upload = multer({ storage });
-
-
-
-router.post("/save", async (req, res) => {
+// Get current user's career profile
+router.get("/me", async (req, res) => {
   try {
-    const {
-      userId,
-      careerGoal,
-      skills,
-      jobPreferences,
-      workExperience,
-      education,
-      certifications,
-      projects,
-      achievements,
-    } = req.body;
-
-    const data = await Career.findOneAndUpdate(
-      { userId },
-      {
-        careerGoal,
-        skills,
-        jobPreferences,
-        workExperience,
-        education,
-        certifications,
-        projects,
-        achievements,
-      },
-      { returnDocument: "after", upsert: true }
-    );
-
+    const data = await Career.findOne({ userId: req.user.id });
     res.json(data);
   } catch (err) {
-    console.error("Error saving career data:", err);
+    res.status(500).json({ message: "Error fetching career data", error: err.message });
+  }
+});
+
+// Create or update current user's career profile
+router.post("/me", async (req, res) => {
+  try {
+    const update = {
+      ...req.body,
+      userId: req.user.id,
+    };
+    const data = await Career.findOneAndUpdate(
+      { userId: req.user.id },
+      update,
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.json(data);
+  } catch (err) {
     res.status(500).json({ message: "Error saving career data", error: err.message });
   }
 });
 
 
-router.get("/get", async (req, res) => {
-  try {
-    const userId = req.query.userId;
+// Helper: Only allow PDF, 5MB
+const pdfUpload = upload.single("file");
 
-    const data = await Career.findOne({ userId });
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: "error fetching career data" });
-  }
-});
-
-router.post("/resume/upload", upload.single("resume"), async (req, res) => {
-  try {
-    const userId = req.body.userId;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
+// POST /api/career/upload-resume
+router.post("/upload-resume", (req, res) => {
+  pdfUpload(req, res, async function (err) {
+    if (err) {
+      return res.status(400).json({ message: err.message || "Upload error" });
     }
-
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
+    if (req.file.mimetype !== "application/pdf") {
+      return res.status(400).json({ message: "Only PDF files allowed" });
+    }
+    try {
+      const resumeUrl = req.file.path.replace(/\\/g, "/");
+      const data = await Career.findOneAndUpdate(
+        { userId: req.user.id },
+        { resumeUrl },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      res.json({ message: "Resume uploaded successfully", resumeUrl: data.resumeUrl });
+      // Log activity
+      await Activity.create({
+        userId: req.user.id,
+        type: "resume_upload",
+        message: `Resume uploaded`,
+      });
+      res.json({ message: "Resume uploaded successfully", resumeUrl: data.resumeUrl });
+    } catch (err) {
+      res.status(500).json({ message: "Error saving resume", error: err.message });
+    }
+  });
+});
 
-    const resumeUrl = req.file.path;
+// POST /api/career/upload-result
+router.post("/upload-result", (req, res) => {
+  pdfUpload(req, res, async function (err) {
+    if (err) {
+      return res.status(400).json({ message: err.message || "Upload error" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    if (req.file.mimetype !== "application/pdf") {
+      return res.status(400).json({ message: "Only PDF files allowed" });
+    }
+    try {
+      const resultUrl = req.file.path.replace(/\\/g, "/");
+      const data = await Career.findOneAndUpdate(
+        { userId: req.user.id },
+        { resultUrl },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      res.json({ message: "Result uploaded successfully", resultUrl: data.resultUrl });
+      // Log activity
+      await Activity.create({
+        userId: req.user.id,
+        type: "result_upload",
+        message: `Result uploaded`,
+      });
+      res.json({ message: "Result uploaded successfully", resultUrl: data.resultUrl });
+    } catch (err) {
+      res.status(500).json({ message: "Error saving result", error: err.message });
+    }
+  });
+});
 
-    console.log("Request body:", req.body);
-    console.log("Uploaded file:", req.file);
-    console.log("User ID:", userId);
-    console.log("File Path:", req.file ? req.file.path : "No file uploaded");
-    console.log("Resume URL to be saved:", resumeUrl);
-
-    const data = await Career.findOneAndUpdate(
-      { userId },
-      { resumeUrl },
-      { returnDocument: "after", upsert: true }
-    );
-
-    console.log("Resume URL to be saved in database:", resumeUrl);
-    console.log("Database update result:", data);
-
-    res.json({ message: "Resume uploaded successfully", resumeUrl });
+// GET /api/career/download-resume
+router.get("/download-resume", async (req, res) => {
+  try {
+    const data = await Career.findOne({ userId: req.user.id }, "resumeUrl");
+    if (!data || !data.resumeUrl) {
+      return res.status(404).json({ message: "No resume found for the user" });
+    }
+    const filePath = path.join(__dirname, "../../", data.resumeUrl);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Resume file not found" });
+    }
+    res.download(filePath, path.basename(filePath));
   } catch (err) {
-    res.status(500).json({ message: "Error uploading resume", error: err.message });
+    res.status(500).json({ message: "Error downloading resume", error: err.message });
   }
 });
 
-// Add a route to fetch the uploaded resume
-router.get("/resume", async (req, res) => {
+// GET /api/career/download-result
+router.get("/download-result", async (req, res) => {
   try {
-    const userId = req.query.userId;
-
-    if (!userId) {
-      console.error("User ID is missing in the request");
-      return res.status(400).json({ message: "User ID is required" });
+    const data = await Career.findOne({ userId: req.user.id }, "resultUrl");
+    if (!data || !data.resultUrl) {
+      return res.status(404).json({ message: "No result found for the user" });
     }
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
+    const filePath = path.join(__dirname, "../../", data.resultUrl);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Result file not found" });
     }
-
-    console.log("Fetching resume for user ID:", userId);
-
-    const data = await Career.findOne({ userId }, "resumeUrl");
-
-    if (!data) {
-      console.error("No user found with the given ID:", userId);
-      return res.status(404).json({ message: "No user found with the given ID" });
-    }
-
-    if (!data.resumeUrl) {
-      console.error("No resume found for user ID:", userId);
-      return res.status(404).json({ message: "No resume found for the given user ID" });
-    }
-
-    console.log("Resume found for user ID:", userId, "Resume URL:", data.resumeUrl);
-    res.json({ resumeUrl: data.resumeUrl });
+    res.download(filePath, path.basename(filePath));
   } catch (err) {
-    console.error("Error fetching resume:", err);
-    res.status(500).json({ message: "Error fetching resume", error: err.message });
+    res.status(500).json({ message: "Error downloading result", error: err.message });
   }
 });
 

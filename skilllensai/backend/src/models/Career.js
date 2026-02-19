@@ -1,28 +1,28 @@
 const mongoose = require("mongoose");
 
+
 const careerSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      unique: true,
+      index: true,
     },
-
-    resumeUrl: {
-      type: String,
-    },
-
-    careerGoal: String,
-
-    skills: [String],
-
-    jobPreferences: {
-      preferredRole: String,
-      preferredLocation: String,
-      expectedSalary: String,
-    },
-
-    workExperience: [
+    fullName: { type: String },
+    email: { type: String },
+    phone: { type: String },
+    education: [
+      {
+        institution: String,
+        degree: String,
+        fieldOfStudy: String,
+        startYear: String,
+        endYear: String,
+      },
+    ],
+    experience: [
       {
         company: String,
         role: String,
@@ -30,28 +30,7 @@ const careerSchema = new mongoose.Schema(
         description: String,
       },
     ],
-
-    education: [
-      {
-        institution: String,
-        degree: String,
-        fieldOfStudy: String,
-        startYear: Number,
-        endYear: Number,
-      },
-    ],
-
-    certifications: [
-      {
-        name: String,
-        issuingOrganization: String,
-        issueDate: Date,
-        expirationDate: Date,
-        credentialId: String,
-        credentialUrl: String,
-      },
-    ],
-
+    skills: [String],
     projects: [
       {
         title: String,
@@ -60,7 +39,9 @@ const careerSchema = new mongoose.Schema(
         link: String,
       },
     ],
-
+    resumeUrl: { type: String },
+    resultUrl: { type: String },
+    careerGoal: { type: String },
     achievements: [String],
   },
   { timestamps: true }
