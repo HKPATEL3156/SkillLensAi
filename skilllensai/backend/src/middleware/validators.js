@@ -6,7 +6,7 @@ exports.registerValidation = [
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
-  body("username").notEmpty().withMessage("Username is required"),
+  // username is now optional
 ];
 
 exports.loginValidation = [

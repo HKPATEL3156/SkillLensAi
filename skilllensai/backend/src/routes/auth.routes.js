@@ -34,12 +34,17 @@ router.post("/signup", registerValidation, async (req, res, next) => {
     bio,
   } = req.body;
   try {
-    // Check if email or username already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "Email or username already exists" });
+      return res.status(400).json({ error: "Email already exists" });
+    }
+    // If username is provided, check if it exists
+    if (username) {
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
     }
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,7 +52,8 @@ router.post("/signup", registerValidation, async (req, res, next) => {
       name,
       email,
       password: hashedPassword,
-      username,
+      // Only set username if provided
+      ...(username && { username }),
       dob,
       qualification,
       phone,
@@ -292,12 +298,10 @@ router.post(
         type: "profile_photo_upload",
         message: `Profile photo updated`,
       });
-      res
-        .status(200)
-        .json({
-          message: "Profile photo updated",
-          profilePhoto: user.profilePhoto,
-        });
+      res.status(200).json({
+        message: "Profile photo updated",
+        profilePhoto: user.profilePhoto,
+      });
     } catch (err) {
       next(err);
     }
