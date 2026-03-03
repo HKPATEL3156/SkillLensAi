@@ -1,19 +1,30 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api, { getQuestions, startQuiz, submitQuiz, getQuizAttempts } from "../services/api";
 
-const Step = ({ idx, title, open, onToggle, locked }) => (
-  <div className="border rounded-md p-3 mb-3 bg-white">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${locked ? 'bg-gray-300' : 'bg-blue-600 text-white'}`}>{idx}</div>
-        <div className="font-semibold">{title}</div>
+const Step = ({ idx, title, open, onToggle, locked, children }) => (
+  <div className={`rounded-xl shadow-md mb-5 transition-all duration-200 bg-white border border-gray-200 ${open ? 'ring-2 ring-blue-500' : ''}`}
+    style={{ overflow: 'hidden' }}>
+    <button
+      className="w-full flex items-center justify-between px-5 py-4 focus:outline-none"
+      onClick={locked ? undefined : onToggle}
+      aria-expanded={open}
+      style={{ cursor: locked ? 'not-allowed' : 'pointer' }}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${locked ? 'bg-gray-300 text-gray-400' : 'bg-blue-600 text-white shadow'}`}>{idx}</div>
+        <div className="font-semibold text-lg text-gray-900">{title}</div>
       </div>
-      <div className="flex items-center gap-3">
-        {locked ? <span className="text-sm text-gray-400">Locked</span> : <button onClick={onToggle} className="text-lg">{open ? '−' : '+'}</button>}
+      <div className="flex items-center gap-2">
+        {locked ? <span className="text-sm text-gray-400">Locked</span> : <span className="text-2xl text-gray-400">{open ? '−' : '+'}</span>}
       </div>
-    </div>
-    {open && !locked && <div className="mt-3 text-sm text-gray-700">{/** children rendered by parent */}</div>}
+    </button>
+    {open && !locked && (
+      <div className="px-5 pb-5 pt-2 animate-fadein">
+        {children}
+      </div>
+    )}
   </div>
 );
 
@@ -21,9 +32,11 @@ const SkillLensCoach = () => {
   const [skills, setSkills] = useState([]);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const [openStep, setOpenStep] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [career, setCareer] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,6 +52,13 @@ const SkillLensCoach = () => {
         setCareer(me.data || null);
         if (me.data && Array.isArray(me.data.selectedSkills)) setSelected(me.data.selectedSkills || []);
       } catch (e) {}
+      try {
+        // Fetch full user profile which often contains detailed education/cgpa fields
+        const p = await api.get("/profile/me");
+        setProfileData(p.data || null);
+      } catch (e) {
+        // non-fatal
+      }
       try {
         const res = await getQuizAttempts();
         setAttempts(res.data.attempts || []);
@@ -93,110 +113,284 @@ const SkillLensCoach = () => {
     }
   };
 
+  // Helper: extract CGPAs from career profile (safe): looks for career.education array
+  // Helper: extract CGPAs from career profile (safe).
+  // Returns array of { level, cgpa, board } for each education entry that has a cgpa-like field.
+  function extractCgpas(careerProfile, userProfile) {
+    // Combine career document education (which may be minimal) with full user profile education
+    const careerEdu = careerProfile && Array.isArray(careerProfile.education) ? careerProfile.education : [];
+    const userEdu = userProfile && Array.isArray(userProfile.education) ? userProfile.education : [];
+    const maxLen = Math.max(careerEdu.length, userEdu.length);
+    const out = [];
+
+    for (let i = 0; i < maxLen; i++) {
+      const c = careerEdu[i] || {};
+      const u = userEdu[i] || {};
+      // merged view: user profile fields take precedence for cgpa details
+      const merged = { ...c, ...u };
+
+      // direct cgpa-like fields
+      const direct = merged.cgpa ?? merged.CGPA ?? merged.gpa ?? merged.grade;
+      let cgpaVal = null;
+      if (direct !== undefined && direct !== null) {
+        const n = parseFloat(String(direct).replace(/[^0-9.]/g, ""));
+        if (!Number.isNaN(n) && n > 0) cgpaVal = n;
+      }
+
+      // fallback: compute avg from semesterWise / semesterWise.sgpa
+      if (cgpaVal === null && Array.isArray(merged.semesterWise) && merged.semesterWise.length) {
+        const svals = merged.semesterWise
+          .map((s) => (s && typeof s === 'object' ? (s.sgpa ?? s.sgpa) : parseFloat(s) || 0))
+          .filter((n) => !Number.isNaN(n) && n > 0);
+        if (svals.length) {
+          const avg = svals.reduce((a, b) => a + b, 0) / svals.length;
+          cgpaVal = Number(avg.toFixed(2));
+        }
+      }
+
+      if (cgpaVal !== null) {
+        out.push({ level: merged.level || merged.degree || merged.institution || `Education ${i + 1}`, cgpa: cgpaVal, board: merged.boardUniversity || merged.board || merged.institution || '' });
+      }
+    }
+
+    return out;
+  }
+
+  // Submit result report: posts academic and skill grades
+  const submitResultReport = async () => {
+    // compute cgpas and grades (merge career and profile data)
+    const cgpas = extractCgpas(career, profileData);
+    const avgCgpa = cgpas.length ? (cgpas.reduce((a,b)=>a+b.cgpa,0)/cgpas.length) : 0;
+    const academicGrade = Math.min(100, Number((avgCgpa * 10).toFixed(2)));
+    // latest submitted attempt's obtainedMarks
+    const latest = attempts.filter(a => a.status==='submitted').sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const skillGrade = latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 0;
+    const avgGrade = Number(((academicGrade + Number(skillGrade))/2).toFixed(2));
+
+    const payload = {
+      academicGrade,
+      skillGrade,
+      avgGrade,
+      cgpas,
+      submittedAt: new Date().toISOString(),
+    };
+
+    try {
+      // try to post to backend endpoint if exists
+      await api.post('/career/submit-result', payload).catch(()=>{});
+      alert('Result report submitted');
+      // refresh attempts or state if needed
+    } catch (e) {
+      console.error(e);
+      alert('Failed to submit report (frontend only)');
+    }
+  };
+
   // lock logic: step1 unlocked if skills extracted present; step2 unlocked if selectedSkills saved or selected non-empty; step3 unlocked if a submitted attempt exists; step4 unlocked if step3 and result report exists
   const step1Done = skills && skills.length > 0;
-  const step2Done = attempts.some(a => a.status === 'submitted');
-  const step3Done = step2Done; // simplified: result report depends on submitted quiz
+  // step2 is unlocked only after step1 is done
   const step1Locked = false;
-  const step2Locked = !step1Done || (selected.length===0 && !(career && career.selectedSkills && career.selectedSkills.length>0));
-  const step3Locked = !step2Done;
+  const step2Locked = !step1Done;
+
+  // step3 (Result Report) unlocked only when there is at least one submitted attempt
+  const hasSubmittedAttempt = attempts.some((a) => a.status === 'submitted');
+  const step3Locked = !hasSubmittedAttempt;
+  const step3Done = hasSubmittedAttempt;
   const step4Locked = !step3Done;
 
+
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">SkillLens AI Coach</h1>
-      <p className="mb-6 text-gray-600">Follow the steps to extract skills, take quiz, review results and get career recommendation.</p>
-
-      {/* Steps */}
-      <div className="mb-6">
-        <div className="text-sm font-medium mb-2">Steps</div>
-        <div>
-          <Step idx={1} title="1. Extract Skills from Resume" open={openStep===1} onToggle={() => setOpenStep(openStep===1?null:1)} locked={step1Locked} />
-          {openStep===1 && !step1Locked && (
-            <div className="mb-4">
-              {!step1Done ? (
-                <div className="text-red-500">No extracted skills found. Please upload resume first.</div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {skills.map((skill,i)=> (
-                    <label key={i} className="flex items-center gap-2 border p-2 rounded cursor-pointer">
-                      <input type="checkbox" checked={selected.includes(skill)} onChange={()=>toggleSkill(skill)} />
-                      <span className="text-sm">{skill}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <div className="mt-3 flex gap-3">
-                <button onClick={saveSkills} disabled={loading || selected.length===0} className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60">{loading? 'Saving...':'Save Skills'}</button>
-                <button onClick={resetSkills} className="bg-gray-200 px-4 py-2 rounded">Reset</button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-10">
+      {/* Header: Premium name + info */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-8 px-8 flex flex-col md:flex-row items-center md:justify-between rounded-b-3xl shadow-lg mb-8">
+        <div className="flex items-center gap-5">
+          {/* Logo image: place your logo at `/public/logo.png` or adjust the path below */}
+          {!logoError ? (
+            <img
+              src="/logo.png"
+              alt="SkillLens logo"
+              className="w-16 h-16 object-cover shadow-lg"
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="w-16 h-16 bg-white/80 flex items-center justify-center shadow-lg" />
           )}
-
-          <Step idx={2} title="2. Take Skill Quiz" open={openStep===2} onToggle={() => setOpenStep(openStep===2?null:2)} locked={step2Locked} />
-          {openStep===2 && !step2Locked && (
-            <div className="mb-4">
-              <div className="mb-3 text-sm text-gray-700">Selected skills: {selected.join(", ") || 'None'}</div>
-              <div className="flex gap-3">
-                <button onClick={handleStartQuiz} className="bg-green-600 text-white px-4 py-2 rounded">Start Quiz</button>
-              </div>
-            </div>
-          )}
-
-          <Step idx={3} title="3. Result Report" open={openStep===3} onToggle={() => setOpenStep(openStep===3?null:3)} locked={step3Locked} />
-          {openStep===3 && !step3Locked && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-700">Results combine academic scores and quiz marks. Use the "Submit Result Report" button to push final report.</div>
-              <div className="mt-3">
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded">Submit Result Report</button>
-              </div>
-            </div>
-          )}
-
-          <Step idx={4} title="4. Career Recommendation" open={openStep===4} onToggle={() => setOpenStep(openStep===4?null:4)} locked={step4Locked} />
-          {openStep===4 && !step4Locked && (
-            <div className="mb-4">
-              <div className="text-sm text-gray-700">Recommendations will be shown based on quiz marks and academic score.</div>
-            </div>
-          )}
+          <div>
+            <div className="text-4xl font-extrabold text-white tracking-tight leading-tight drop-shadow">SkillLens AI Coach</div>
+            <div className="text-lg text-blue-100 mt-2 font-medium">Your guided path to skill assessment and career growth</div>
+          </div>
         </div>
+        {/* Optional: Add user info, logo, or navigation here */}
       </div>
 
-      {/* Attempts Table */}
-      <div className="mt-6 bg-white p-4 rounded shadow">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-lg font-semibold">Quiz Attempts</div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto text-sm">
-            <thead>
-              <tr className="text-left bg-gray-100">
-                <th className="p-2">No</th>
-                <th className="p-2">Date</th>
-                <th className="p-2">Skills</th>
-                <th className="p-2">Quiz</th>
-                <th className="p-2">Total</th>
-                <th className="p-2">Obtained</th>
-                <th className="p-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attempts.length === 0 && (
-                <tr><td colSpan={7} className="p-4 text-center text-gray-500">No quiz attempts yet</td></tr>
-              )}
-              {attempts.map((a, idx) => (
-                <tr key={a._id} className="border-t">
-                  <td className="p-2">{idx+1}</td>
-                  <td className="p-2">{new Date(a.createdAt).toLocaleString()}</td>
-                  <td className="p-2">{(a.skills||[]).join(", ")}</td>
-                  <td className="p-2">{a.quizName}</td>
-                  <td className="p-2">{a.totalMarks || 100}</td>
-                  <td className="p-2">{a.obtainedMarks || 0}</td>
-                  <td className="p-2">{a.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="max-w-3xl mx-auto px-4">
+        {/* Steps */}
+        <div className="mb-8">
+          <Step idx={1} title="Extract Skills from Resume" open={openStep===1} onToggle={() => setOpenStep(openStep===1?null:1)} locked={step1Locked}>
+            {!step1Done ? (
+              <div className="text-red-500 font-medium">No extracted skills found. Please upload your resume first.</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {skills.map((skill,i)=> (
+                  <label key={i} className="flex items-center gap-2 border p-2 rounded-lg cursor-pointer bg-gray-50 hover:bg-blue-50 transition">
+                    <input type="checkbox" checked={selected.includes(skill)} onChange={()=>toggleSkill(skill)} className="accent-blue-600" />
+                    <span className="text-sm font-medium text-gray-800">{skill}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 flex gap-3">
+              <button onClick={saveSkills} disabled={loading || selected.length===0} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold shadow disabled:opacity-60">{loading? 'Saving...':'Save Skills'}</button>
+              <button onClick={resetSkills} className="bg-gray-200 px-5 py-2 rounded-lg font-semibold">Reset</button>
+            </div>
+          </Step>
+
+          <Step idx={2} title="Take Skill Quiz" open={openStep===2} onToggle={() => setOpenStep(openStep===2?null:2)} locked={step2Locked}>
+            {/* Step 2: Premium, modern design */}
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#059669"/></svg>
+                </div>
+                <div className="text-lg font-bold text-gray-800">Ready to test your skills?</div>
+              </div>
+              <div className="mb-3 text-sm text-gray-700">Selected skills: {selected.length > 0 ? selected.map((s,i) => <span key={i} className="text-blue-700 font-semibold mr-2">{s}</span>) : <span className="text-gray-400">None</span>}</div>
+              <button onClick={handleStartQuiz} className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition mb-6">Start Quiz</button>
+            </div>
+            {/* Quiz Attempts Table: Only in Step 2 */}
+            <div className="bg-white rounded-xl shadow border border-blue-100 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-base font-bold text-blue-700">Your Quiz Attempts</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto text-sm rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-blue-50 text-blue-900">
+                      <th className="p-3 font-semibold">No</th>
+                      <th className="p-3 font-semibold">Date</th>
+                      <th className="p-3 font-semibold">Skills</th>
+                      <th className="p-3 font-semibold">Quiz</th>
+                      <th className="p-3 font-semibold">Total</th>
+                      <th className="p-3 font-semibold">Obtained</th>
+                      <th className="p-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attempts.length === 0 && (
+                      <tr><td colSpan={7} className="p-6 text-center text-gray-400">No quiz attempts yet</td></tr>
+                    )}
+                    {attempts.map((a, idx) => (
+                      <tr key={a._id} className="border-t hover:bg-blue-50 transition">
+                        <td className="p-3 font-semibold text-center">{idx+1}</td>
+                        <td className="p-3">{new Date(a.createdAt).toLocaleString()}</td>
+                        <td className="p-3">{(a.skills||[]).map((s,i)=>(<span key={i} className="text-blue-700 font-semibold mr-1">{s}</span>))}</td>
+                        <td className="p-3">{a.quizName}</td>
+                        <td className="p-3 text-center">{a.totalMarks || 100}</td>
+                        <td className="p-3 text-center font-bold text-green-700">{a.obtainedMarks || 0}</td>
+                        <td className="p-3 text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${a.status==='submitted' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{a.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Step>
+
+          <Step idx={3} title="Result Report" open={openStep===3} onToggle={() => setOpenStep(openStep===3?null:3)} locked={step3Locked}>
+            <div className="text-sm text-gray-700 mb-4">Results combine academic scores and quiz marks. Review the computed grades below and click <span className="font-semibold text-indigo-700">Submit Result Report</span> to push the final report.</div>
+
+            {/* Display education CGPAs */}
+            <div className="bg-white p-4 rounded shadow mb-4">
+              <div className="text-sm font-semibold mb-2">Academic CGPAs</div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {(() => {
+                  const cgpas = extractCgpas(career, profileData);
+                  if (!cgpas || cgpas.length === 0) return <div className="col-span-2 text-gray-500">No CGPA data available in profile.</div>;
+                  return cgpas.map((c, i) => (
+                    <div key={i} className="p-2 border rounded">{`${c.level || `Education ${i+1}`} ${c.board ? `(${c.board})` : ''}: ${c.cgpa}`}</div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Latest quiz marks and grade boxes */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="p-4 bg-white rounded shadow">
+                <div className="text-sm text-gray-500">Latest Quiz Marks</div>
+                <div className="text-2xl font-bold text-green-700">{(() => {
+                  const latest = attempts.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
+                  return latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 'N/A';
+                })()}</div>
+              </div>
+
+              <div className="p-4 bg-white rounded shadow">
+                <div className="text-sm text-gray-500">Academic Grade (out of 100)</div>
+                <div className="text-2xl font-bold text-indigo-600">{(() => {
+                  const cgpas = extractCgpas(career, profileData);
+                  const avgCgpa = cgpas.length ? (cgpas.reduce((sum, item) => sum + (item.cgpa || 0), 0) / cgpas.length) : 0;
+                  return Math.min(100, Number((avgCgpa*10).toFixed(2)));
+                })()}</div>
+              </div>
+
+              <div className="p-4 bg-white rounded shadow">
+                <div className="text-sm text-gray-500">Skill Grade (latest quiz)</div>
+                <div className="text-2xl font-bold text-yellow-600">{(() => {
+                  const latest = attempts.filter(a=>a.status==='submitted').slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
+                  return latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 'N/A';
+                })()}</div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <button onClick={submitResultReport} className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-indigo-700 transition">Submit Result Report</button>
+            </div>
+
+            {/* Results table built from submitted attempts with computed academic/avg grades */}
+            <div className="bg-white rounded-xl shadow p-4">
+              <div className="text-base font-semibold mb-3">Submitted Reports</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left bg-gray-100">
+                      <th className="p-2">No</th>
+                      <th className="p-2">Date</th>
+                      <th className="p-2">Academic Grade</th>
+                      <th className="p-2">Skill Grade</th>
+                      <th className="p-2">Avg Grade</th>
+                      <th className="p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attempts.filter(a=>a.status==='submitted').length === 0 && (
+                      <tr><td colSpan={6} className="p-4 text-center text-gray-500">No submitted reports yet</td></tr>
+                    )}
+                    {attempts.filter(a=>a.status==='submitted').map((a, idx) => {
+                      const cgpas = extractCgpas(career, profileData);
+                      const academic = cgpas.length ? (cgpas.reduce((sum, item) => sum + (item.cgpa || 0), 0)/cgpas.length)*10 : 0;
+                      const skill = a.obtainedMarks ?? a.totalMarks ?? 0;
+                      const avg = Number(((academic + Number(skill))/2).toFixed(2));
+                      return (
+                        <tr key={a._id} className="border-t">
+                          <td className="p-2 align-top">{idx+1}</td>
+                          <td className="p-2 align-top">{new Date(a.createdAt).toLocaleString()}</td>
+                          <td className="p-2 align-top">{Number(academic.toFixed ? academic.toFixed(2) : academic)}</td>
+                          <td className="p-2 align-top">{skill}</td>
+                          <td className="p-2 align-top">{avg}</td>
+                          <td className="p-2 align-top">{a.status}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Step>
+
+          <Step idx={4} title="Career Recommendation" open={openStep===4} onToggle={() => setOpenStep(openStep===4?null:4)} locked={step4Locked}>
+            <div className="text-sm text-gray-700">Recommendations will be shown based on quiz marks and academic score.</div>
+          </Step>
         </div>
       </div>
     </div>

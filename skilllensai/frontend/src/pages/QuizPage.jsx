@@ -80,6 +80,14 @@ export default function QuizPage() {
 
 	const [user, setUser] = useState({ name: "Candidate", photo: "/profile.png" });
 	const [submitted, setSubmitted] = useState(false);
+	const [warningsUsed, setWarningsUsed] = useState(0);
+	const [cheatingDetected, setCheatingDetected] = useState(false);
+	const [showWarningModal, setShowWarningModal] = useState(false);
+	const [warningRemaining, setWarningRemaining] = useState(3);
+	const [warningReason, setWarningReason] = useState('');
+	const [interfaceLocked, setInterfaceLocked] = useState(false);
+	const [showTerminatedModal, setShowTerminatedModal] = useState(false);
+	const lastViolationRef = useRef(0);
 	const [showExitModal, setShowExitModal] = useState(false);
 	const [showSubmitModal, setShowSubmitModal] = useState(false);
 
@@ -127,6 +135,17 @@ export default function QuizPage() {
 		load();
 	}, [attemptId]);
 
+	// Initialize warnings from session storage for this attempt
+	useEffect(() => {
+		if (!attemptId) return;
+		const key = `exam_warnings_${attemptId}`;
+		const stored = sessionStorage.getItem(key);
+		if (stored) {
+			try { const n = parseInt(stored, 10); if (!Number.isNaN(n)) setWarningsUsed(n); } catch (e) {}
+		}
+		return () => {};
+	}, [attemptId]);
+
 	// prevent page scroll and warn on unload
 	useEffect(() => {
 		const prev = document.body.style.overflow;
@@ -141,6 +160,94 @@ export default function QuizPage() {
 			window.removeEventListener("beforeunload", handler);
 		};
 	}, []);
+
+
+	// Anti-cheating: handlers for visibility, blur, fullscreen exit, right-click, and copy shortcuts
+	useEffect(() => {
+		if (!attemptId) return;
+		let mounted = true;
+
+		const recordWarnings = (reason) => {
+			if (!mounted) return;
+			if (!running) return; // only while exam running
+			if (submitted || interfaceLocked) return;
+			// debounce rapid repeated events
+			const now = Date.now();
+			if (now - (lastViolationRef.current || 0) < 2000) return;
+			lastViolationRef.current = now;
+			// increment and persist
+			setWarningsUsed((prev) => {
+				const next = prev + 1;
+				try { sessionStorage.setItem(`exam_warnings_${attemptId}`, String(next)); } catch (e) {}
+				setWarningRemaining(Math.max(0, 3 - next));
+				setWarningReason(reason || 'Suspicious activity');
+				// show modal for first 3 warnings
+				setShowWarningModal(true);
+				// if exceeded threshold -> auto submit
+				if (next > 3) {
+					// auto submit due to cheating
+					setInterfaceLocked(true);
+					setCheatingDetected(true);
+					// stop timer
+					setRunning(false);
+					// show terminated modal after submit
+					// call submit with cheating flag
+					doSubmit(true, { cheatingDetected: true, submissionStatus: 'auto-submitted-cheating', warningsUsed: next }).then(() => {
+						setShowTerminatedModal(true);
+					}).catch(()=>{
+						setShowTerminatedModal(true);
+					});
+				}
+				return next;
+			});
+		};
+
+		const onVisibilityChange = () => {
+			if (document.visibilityState !== 'visible') recordWarnings('Tab switch / visibility lost');
+		};
+		const onBlur = () => {
+			recordWarnings('Window blur / focus lost');
+		};
+		const onFullscreenChange = () => {
+			if (!document.fullscreenElement) {
+				recordWarnings('Exited fullscreen');
+			}
+		};
+		const onContextMenu = (e) => {
+			// disable right click during exam
+			if (running && !submitted && !interfaceLocked) {
+				e.preventDefault();
+				recordWarnings('Right click');
+			}
+		};
+		const onKeydown = (e) => {
+			if (!running || submitted || interfaceLocked) return;
+			const ctrl = e.ctrlKey || e.metaKey;
+			if (ctrl && ['c','v','a','C','V','A'].includes(e.key)) {
+				e.preventDefault();
+				recordWarnings('Copy/Paste/Select All shortcut');
+			}
+			// F11 or ESC to exit fullscreen may be caught by fullscreenchange
+		};
+
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		window.addEventListener('blur', onBlur);
+		document.addEventListener('fullscreenchange', onFullscreenChange);
+		document.addEventListener('contextmenu', onContextMenu);
+		window.addEventListener('keydown', onKeydown, true);
+
+		// Force fullscreen at start
+		try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); } catch (e) {}
+
+		return () => {
+			mounted = false;
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+			window.removeEventListener('blur', onBlur);
+			document.removeEventListener('fullscreenchange', onFullscreenChange);
+			document.removeEventListener('contextmenu', onContextMenu);
+			window.removeEventListener('keydown', onKeydown, true);
+		};
+	}, [attemptId, running, submitted, interfaceLocked]);
 
 	// Timer interval
 	useEffect(() => {
@@ -210,6 +317,7 @@ export default function QuizPage() {
 	}
 
 	function handleSelectOption(q, key) {
+		if (submitted || interfaceLocked) return;
 		const qid = q.id ?? q.questionId ?? String(current + 1);
 		setVisited((s) => new Set(s).add(qid));
 		setAnswers((prev) => {
@@ -259,42 +367,73 @@ export default function QuizPage() {
 	}
 
 	async function doSubmit(isAuto = false) {
-		// doSubmit is called after confirmation (UI handles confirm when needed)
-		// lock interactions
+		// Clear console logs and lock interactions
+		try { console.clear(); } catch (e) {}
 		setSubmitted(true);
 
+		const MARKS_PER_QUESTION = 4;
 		const total = questions.length;
 		const attempted = Object.keys(answers).length;
 		const notAttempted = total - attempted;
 		const markedForReview = marked.size;
 
-		// compute score: 1 mark per question if exact match with 'correct' field (if present)
-		let score = 0;
+		let totalObtained = 0;
 		const resultAnswers = questions.map((q) => {
 			const qid = q.id ?? q.questionId ?? String((q.index ?? 0) + 1);
-			const sel = answers[qid] || [];
+			const sel = Array.isArray(answers[qid]) ? answers[qid] : [];
 			const correct = Array.isArray(q.correct) ? q.correct : (q.correct ? [q.correct] : []);
-			if (correct.length > 0) {
-				if (arraysEqual(correct, sel)) score += 1;
+			let obtained = 0;
+			if (correct.length === 0) {
+				obtained = 0;
+			} else {
+				// treat values as strings for comparison stability
+				const correctSet = new Set(correct.map((c) => String(c)));
+				const selSet = new Set((sel || []).map((s) => String(s)));
+				// count correctly selected options
+				let correctSelected = 0;
+				for (const c of correctSet) if (selSet.has(c)) correctSelected++;
+				// For MCQ (single correct option) require exact match to award full marks
+				if (correctSet.size === 1) {
+					const single = Array.from(correctSet)[0];
+					obtained = (selSet.size === 1 && selSet.has(single)) ? MARKS_PER_QUESTION : 0;
+				} else {
+					// MSQ: award partial marks proportional to correctly selected options
+					// No negative marking for incorrect extra selections
+					obtained = (correctSelected / correctSet.size) * MARKS_PER_QUESTION;
+				}
 			}
-			return { questionId: qid, selectedOptions: sel };
+			totalObtained += obtained;
+			return { questionId: qid, selectedOptions: sel, obtainedMarks: Number(obtained.toFixed(2)) };
 		});
 
-		const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+		const maxMarks = total * MARKS_PER_QUESTION;
+		const percentage = maxMarks > 0 ? Math.round((totalObtained / maxMarks) * 100) : 0;
 
+		const warningsCount = (typeof window !== 'undefined' && attemptId) ? (parseInt(sessionStorage.getItem(`exam_warnings_${attemptId}`), 10) || warningsUsed) : warningsUsed;
 		const payload = {
 			sessionId: attemptId || "",
 			totalQuestions: total,
 			attempted,
 			notAttempted,
 			markedForReview,
-			answers: resultAnswers,
-			score,
+			warningsUsed: warningsCount,
+			cheatingDetected: false,
+			submissionStatus: 'normal',
+			score: Number(totalObtained.toFixed(2)),
 			percentage,
+			answers: resultAnswers,
 		};
 
+		// allow caller options via a second arg (internal use)
+		const callerOpts = arguments[1] || {};
+		if (callerOpts.warningsUsed !== undefined) payload.warningsUsed = callerOpts.warningsUsed;
+		if (callerOpts.cheatingDetected) {
+			payload.cheatingDetected = true;
+			payload.submissionStatus = callerOpts.submissionStatus || 'auto-submitted-cheating';
+		}
+
 		try {
-			await submitQuiz({ attemptId, obtainedMarks: score, totalMarks: total, status: "submitted", answersSummary: payload });
+			await submitQuiz({ attemptId, obtainedMarks: Number(totalObtained.toFixed(2)), totalMarks: maxMarks, status: payload.cheatingDetected ? 'auto-submitted-cheating' : 'submitted', answersSummary: payload });
 		} catch (e) {
 			console.error(e);
 		}
@@ -349,6 +488,16 @@ export default function QuizPage() {
 							</div>
 						</div>
 					</div>
+
+					{/* Simple testing: show correct option letters (A, B, C...) */}
+					<div className="mt-2 text-xs text-green-700">Correct ans: {(() => {
+						const keys = q.options ? Object.keys(q.options) : [];
+						const map = {};
+						keys.forEach((k,i) => { map[k] = String.fromCharCode(65 + i); });
+						const correct = Array.isArray(q.correct) ? q.correct : (q.correct ? [q.correct] : []);
+						if (!correct || correct.length === 0) return 'N/A';
+						return correct.map(c => map[c] ?? String(c)).join(' ');
+					})()}</div>
 				</div>
 			)}
 
@@ -356,7 +505,8 @@ export default function QuizPage() {
 			<header className="fixed top-0 left-0 right-0 bg-white border-b z-40">
 				<div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
 					<div className="w-1/3 flex items-center gap-3">
-						<div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">SL</div>
+						{/* Use site logo (place at /logo.png). No circular wrapper */}
+						<img src="/logo.png" alt="SkillLens logo" className="h-10 w-10 object-cover shadow-sm" onError={(e)=>{e.currentTarget.onerror=null; e.currentTarget.src='/profile.png';}} />
 						<div>
 							<div className="text-lg font-semibold">SkillLens AI</div>
 							<div className="text-xs text-gray-500">Skill Evaluation — Exam Portal</div>
@@ -406,11 +556,18 @@ export default function QuizPage() {
 									<div className="grid gap-3">
 										{q.options && Object.entries(q.options).map(([key, text]) => {
 											const isSelected = selected.includes(key);
+											const correctArr = Array.isArray(q.correct) ? q.correct : (q.correct ? [q.correct] : []);
+											const isCorrect = correctArr.includes(key);
 											return (
 												<button key={key} onClick={() => handleSelectOption(q, key)} className={`w-full text-left px-4 py-3 rounded border ${isSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-gray-900 hover:bg-gray-50'} focus:outline-none`}>
 													<div className="flex items-start gap-3">
 														<div className={`w-6 h-6 rounded-full flex items-center justify-center border ${isSelected ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-700'}`}>{key}</div>
-														<div className="text-sm">{text}</div>
+														<div className="flex-1 text-sm flex items-center justify-between">
+															<div>{text}</div>
+															{isCorrect && (
+																<div className="ml-4 text-xs text-green-700 font-semibold">Correct</div>
+															)}
+														</div>
 													</div>
 												</button>
 											);
@@ -503,6 +660,51 @@ export default function QuizPage() {
 			</main>
 
 			{/* Exit modal */}
+			{/* Warning modal for suspicious activity (professional dialog) */}
+			{showWarningModal && (
+				<div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+					<div className="bg-white rounded-lg shadow-2xl w-full max-w-xl p-6 mx-4" onClick={(e)=>e.stopPropagation()}>
+						<h3 className="text-xl font-semibold mb-2">Warning – Suspicious Activity Detected</h3>
+						<p className="text-sm text-gray-700 mb-4">We detected that you left the exam screen. This may be considered cheating. You have <span className="font-semibold">{warningRemaining}</span> warnings remaining. If you exceed 3 warnings, your exam will be automatically submitted.</p>
+						<div className="flex justify-end gap-3">
+							<button className="px-4 py-2 rounded bg-white border" onClick={() => { setShowWarningModal(false); }}>I will not repeat this</button>
+							<button className="px-4 py-2 rounded bg-red-600 text-white" onClick={async () => {
+								setShowWarningModal(false);
+								setCheatingDetected(true);
+								setInterfaceLocked(true);
+								setRunning(false);
+								const warningsCount = parseInt(sessionStorage.getItem(`exam_warnings_${attemptId}`), 10) || warningsUsed;
+								await doSubmit(false, { cheatingDetected: true, submissionStatus: 'auto-submitted-cheating', warningsUsed: warningsCount });
+							}}>
+								Exit Exam
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Terminated modal shown after auto-submit due to cheating */}
+			{showTerminatedModal && (
+				<div className="fixed inset-0 z-70 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+					<div className="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 mx-4" onClick={(e)=>e.stopPropagation()}>
+						<h3 className="text-xl font-semibold mb-2 text-red-600">Exam Terminated</h3>
+						<p className="text-sm text-gray-700 mb-4">You have exceeded the maximum allowed violations. Your exam has been automatically submitted due to suspicious activity.</p>
+						<div className="flex justify-end">
+							<button className="px-4 py-2 rounded bg-indigo-600 text-white" onClick={() => { setShowTerminatedModal(false); navigate('/dashboard/coach'); }}>View Report</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Interaction-blocking overlay when interface is locked (submission in progress) */}
+			{interfaceLocked && !showTerminatedModal && (
+				<div className="fixed inset-0 z-80 bg-black bg-opacity-30 flex items-center justify-center">
+					<div className="bg-white rounded-lg shadow p-6">
+						<div className="text-lg font-semibold">Submitting exam…</div>
+						<div className="text-sm text-gray-600 mt-2">Your submission is being processed due to policy violation.</div>
+					</div>
+				</div>
+			)}
 			{showExitModal && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
 					<div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
@@ -555,18 +757,18 @@ export default function QuizPage() {
 			<footer className="fixed bottom-0 left-0 right-0 bg-white border-t z-40">
 				<div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
 					<div className="flex items-center gap-3">
-						<button onClick={prevQuestion} disabled={current===0 || submitted} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Previous</button>
+						<button onClick={prevQuestion} disabled={current===0 || submitted || interfaceLocked} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Previous</button>
 						<button onClick={() => gotoQuestion(0)} className="px-4 py-2 rounded bg-white border">First</button>
 					</div>
 
 					<div className="flex items-center gap-2">
-						<button onClick={() => handleClearResponse(q)} disabled={submitted} className="px-4 py-2 rounded bg-white border">Clear</button>
-						<button onClick={() => handleMarkForReview(q)} disabled={submitted} className="px-4 py-2 rounded bg-yellow-100">Mark for Review</button>
-						<button onClick={() => gotoQuestion(Math.min(total-1, current+1))} disabled={submitted} className="px-4 py-2 rounded bg-blue-600 text-white">Save & Next</button>
+						<button onClick={() => handleClearResponse(q)} disabled={submitted || interfaceLocked} className="px-4 py-2 rounded bg-white border">Clear</button>
+							<button onClick={() => handleMarkForReview(q)} disabled={submitted || interfaceLocked} className="px-4 py-2 rounded bg-yellow-100">Mark for Review</button>
+							<button onClick={() => gotoQuestion(Math.min(total-1, current+1))} disabled={submitted || interfaceLocked} className="px-4 py-2 rounded bg-blue-600 text-white">Save & Next</button>
 					</div>
 
 					<div className="flex items-center gap-2">
-						<button onClick={() => setShowSubmitModal(true)} disabled={submitted} className="px-4 py-2 rounded bg-red-600 text-white">Submit Exam</button>
+						<button onClick={() => setShowSubmitModal(true)} disabled={submitted || interfaceLocked} className="px-4 py-2 rounded bg-red-600 text-white">Submit Exam</button>
 						<button onClick={() => setShowExitModal(true)} className="px-4 py-2 rounded bg-gray-800 text-white">Exit Exam</button>
 					</div>
 				</div>
