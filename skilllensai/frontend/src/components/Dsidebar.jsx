@@ -13,9 +13,7 @@ import {
 const Dsidebar = ({ isOpen }) => {
   return (
     <aside
-      className={`bg-blue-800 text-white h-full transition-transform transform ${
-        isOpen ? "translate-x-0 w-64" : "-translate-x-full w-16"
-      } fixed top-16 left-0 z-40 shadow-lg`}
+      className={`bg-blue-800 text-white h-screen pt-16 flex-shrink-0 transition-all duration-300 shadow-lg ${isOpen ? 'w-64' : 'w-16'}`}
     >
       <nav className="flex flex-col space-y-4 p-4">
         <NavLink

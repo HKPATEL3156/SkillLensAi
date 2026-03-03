@@ -49,7 +49,7 @@ router.post("/signup", registerValidation, async (req, res, next) => {
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
-      name,
+      fullName: name,
       email,
       password: hashedPassword,
       // Only set username if provided
@@ -68,6 +68,42 @@ router.post("/signup", registerValidation, async (req, res, next) => {
   }
 });
 
+// Development helper: set initial password for accounts that have no password.
+// IMPORTANT: This is intentionally guarded by an environment flag to avoid misuse in production.
+router.post("/set-password", async (req, res, next) => {
+  try {
+    if (process.env.ALLOW_INSECURE_SET_PASSWORD !== "true") {
+      return res.status(403).json({ error: "Not allowed" });
+    }
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword)
+      return res
+        .status(400)
+        .json({ error: "Email and newPassword are required" });
+    // basic password strength check
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword))
+      return res.status(400).json({
+        error:
+          "Password must be at least 8 chars, include uppercase, number and special char",
+      });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (user.password)
+      return res
+        .status(400)
+        .json({ error: "Password already set for this account" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: "Password set successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Login
 router.post("/login", loginValidation, async (req, res, next) => {
   const errors = validationResult(req);
@@ -76,10 +112,24 @@ router.post("/login", loginValidation, async (req, res, next) => {
   }
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user.password) {
+      console.error(
+        `Login attempt for user ${email} but no password is set on account`,
+      );
+      return res.status(400).json({
+        error: "Account has no password set. Please reset your password.",
+      });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured in environment");
+      return res
+        .status(500)
+        .json({ error: "Server authentication misconfigured" });
+    }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
@@ -97,7 +147,7 @@ router.get("/profile", async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+    res.json({ user });
   } catch (err) {
     next(err);
   }
@@ -118,7 +168,7 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed!"));
+      return cb(new Error("Only image files are allowed!"), false);
     }
     cb(null, true);
   },
@@ -137,6 +187,12 @@ router.get("/activity/me", async (req, res, next) => {
   }
 });
 
+// Compatibility wrapper: accept legacy frontend uploads to /api/auth/profile/photo
+const profileCtrl = require("../controllers/profile.controller");
+router.post("/profile/photo", upload.single("profilePhoto"), (req, res, next) =>
+  profileCtrl.uploadProfileImage(req, res, next),
+);
+
 // Change Password
 router.post("/change-password", async (req, res, next) => {
   try {
@@ -146,7 +202,7 @@ router.post("/change-password", async (req, res, next) => {
       return res
         .status(400)
         .json({ error: "Both old and new password are required" });
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     if (!user) return res.status(404).json({ error: "User not found" });
     const isMatch = await bcrypt.compare(old, user.password);
     if (!isMatch)
@@ -159,153 +215,7 @@ router.post("/change-password", async (req, res, next) => {
   }
 });
 
-// Enhanced Signup Route
-// Enhanced Signup Route (with username, dob, qualification, etc.)
-router.post("/signup", async (req, res) => {
-  const {
-    name,
-    email,
-    password,
-    username,
-    dob,
-    qualification,
-    phone,
-    address,
-    gender,
-    bio,
-  } = req.body;
-  try {
-    // Check if email or username already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "Email or username already exists" });
-    }
-
-    // Hash password and create user
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      username,
-      dob,
-      qualification,
-      phone,
-      address,
-      gender,
-      bio,
-    });
-    await newUser.save();
-
-    res.status(201).json({ message: "User created successfully" });
-  } catch (err) {
-    console.error("Error during user registration:", err);
-    res.status(500).json({ error: "Error creating user" });
-  }
-});
-
-// Login
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-    res.status(200).json({ token });
-  } catch (err) {
-    res.status(500).json({ error: "Error logging in" });
-  }
-});
-
-// Dashboard Route
-router.get("/dashboard", async (req, res) => {
-  try {
-    const userId = req.user.id; // Assuming user ID is extracted from JWT middleware
-    const user = await User.findById(userId).select("-password");
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    res.status(200).json({
-      message: "Dashboard data fetched successfully",
-      user,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching dashboard data" });
-  }
-});
-
-// Profile Update Route (all fields except email, username)
-router.put("/profile", async (req, res) => {
-  const { name, password, dob, qualification, phone, address, gender, bio } =
-    req.body;
-  try {
-    const userId = req.user.id;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    // Email and username cannot be changed
-    const updatedData = {
-      name,
-      dob,
-      qualification,
-      phone,
-      address,
-      gender,
-      bio,
-    };
-    if (password) {
-      updatedData.password = await bcrypt.hash(password, 10);
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
-      new: true,
-    });
-    // Log activity
-    await Activity.create({
-      userId,
-      type: "profile_update",
-      message: `Profile updated`,
-    });
-    res
-      .status(200)
-      .json({ message: "Profile updated successfully", user: updatedUser });
-  } catch (err) {
-    res.status(500).json({ error: "Error updating profile" });
-  }
-});
-
-// Profile Photo Upload (single, correct implementation)
-router.post(
-  "/profile/photo",
-  upload.single("profilePhoto"),
-  async (req, res, next) => {
-    try {
-      const userId = req.user._id;
-      const user = await User.findById(userId);
-      if (!user) return res.status(404).json({ error: "User not found" });
-      user.profilePhoto = `/uploads/profile-photos/${req.file.filename}`;
-      await user.save();
-      // Log activity
-      await Activity.create({
-        userId,
-        type: "profile_photo_upload",
-        message: `Profile photo updated`,
-      });
-      res.status(200).json({
-        message: "Profile photo updated",
-        profilePhoto: user.profilePhoto,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-);
+// Note: profile-related endpoints (profile, profile photo, resume, skills)
+// have been moved to dedicated routes at /api/profile to keep code organized.
 
 module.exports = router;

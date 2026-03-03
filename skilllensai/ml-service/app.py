@@ -63,7 +63,11 @@ skill_list = [
     "hadoop","spark","airflow","kafka","etl",
 
     # soft skills
-    "problem solving","teamwork","communication","leadership"
+    "problem solving","teamwork","communication","leadership",
+    
+    
+    
+    
 ]
 
 

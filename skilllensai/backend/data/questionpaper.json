@@ -1,0 +1,352 @@
+[
+  {
+    "id": 1,
+    "text": "Consider a React component that fetches data on mount and updates state. Which of the following are best practices for managing side effects and preventing memory leaks?",
+    "code": "import React, { useState, useEffect } from 'react';\n\nfunction MyComponent() {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    let isMounted = true;\n    fetch('/api/data')\n      .then(res => res.json())\n      .then(json => {\n        if (isMounted) {\n          setData(json);\n          setLoading(false);\n        }\n      });\n\n    return () => { isMounted = false; };\n  }, []);\n\n  return loading ? <p>Loading...</p> : <p>{data}</p>;\n}",
+    "type": "MSQ",
+    "options": {
+      "A": "Using a cleanup function in `useEffect` to cancel subscriptions or set flags.",
+      "B": "Ensuring all state updates are wrapped in `setTimeout` to defer execution.",
+      "C": "Adding `isMounted` flag to prevent state updates on unmounted components.",
+      "D": "Placing the `fetch` call directly inside the component body without `useEffect`."
+    },
+    "correct": ["A", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 2,
+    "text": "In an Express.js application, what is the correct order of middleware execution for a request that matches `/api/users`?",
+    "code": "app.use((req, res, next) => { console.log('Global 1'); next(); });\napp.get('/api/:resource', (req, res, next) => { console.log('Resource specific'); next(); });\napp.use((req, res, next) => { console.log('Global 2'); next(); });\napp.get('/api/users', (req, res) => { res.send('Users data'); });",
+    "type": "MCQ",
+    "options": {
+      "A": "Global 1 -> Resource specific -> Global 2 -> /api/users",
+      "B": "Global 1 -> Resource specific -> /api/users",
+      "C": "Global 1 -> /api/users",
+      "D": "Global 1 -> Global 2 -> Resource specific -> /api/users"
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 3,
+    "text": "You have a MongoDB collection `orders` with documents like `{ _id: 1, userId: 'A', total: 100, items: [{productId: 'P1', qty: 2}, {productId: 'P2', qty: 1}] }`. Which aggregation pipeline stages can you use to find the total quantity of 'P1' ordered by each user?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "`$unwind` on the `items` array.",
+      "B": "`$match` to filter for `productId: 'P1'`.",
+      "C": "`$group` by `userId` and sum `items.qty`.",
+      "D": "`$lookup` to join with a `products` collection."
+    },
+    "correct": ["A", "B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 4,
+    "text": "Which Tailwind CSS class would you use to make an element's text color blue, with a shade of 500, and make the text bold?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "`text-blue-500 font-bold`",
+      "B": "`color-blue-500 font-weight-bold`",
+      "C": "`text-blue-500 text-bold`",
+      "D": "`blue-500 bold`"
+    },
+    "correct": ["A"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 5,
+    "text": "In React, you have a parent component passing a callback function and an object prop to a child component. The child component frequently re-renders. How can you optimize the child component to prevent unnecessary re-renders?",
+    "code": "const Parent = () => {\n  const [count, setCount] = useState(0);\n  const handleClick = useCallback(() => {\n    console.log('Button clicked');\n  }, []);\n  const data = useMemo(() => ({ value: count * 2 }), [count]);\n\n  return (\n    <div>\n      <button onClick={() => setCount(count + 1)}>Increment</button>\n      <Child onClick={handleClick} data={data} />\n    </div>\n  );\n};\n\nconst Child = ({ onClick, data }) => {\n  console.log('Child rendered');\n  return (\n    <div>\n      <p>Data: {data.value}</p>\n      <button onClick={onClick}>Child Button</button>\n    </div>\n  );\n};",
+    "type": "MSQ",
+    "options": {
+      "A": "Wrap the `Child` component in `React.memo`.",
+      "B": "Use `useCallback` for the `onClick` prop in the `Parent` component.",
+      "C": "Use `useMemo` for the `data` prop in the `Parent` component.",
+      "D": "Convert `Child` to a class component and implement `shouldComponentUpdate`."
+    },
+    "correct": ["A", "B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 6,
+    "text": "You are building a REST API with Express.js. Which of the following are good practices for handling errors consistently across your application?",
+    "code": "app.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(500).send('Something broke!');\n});",
+    "type": "MSQ",
+    "options": {
+      "A": "Defining a centralized error-handling middleware at the end of your middleware stack.",
+      "B": "Using `try...catch` blocks in every asynchronous route handler to catch errors.",
+      "C": "Wrapping async route handlers with a utility function that catches errors and passes them to `next()`.",
+      "D": "Returning a 200 OK status with an error message in the response body for all errors."
+    },
+    "correct": ["A", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 7,
+    "text": "Which type of MongoDB index would be most beneficial for queries that frequently sort documents by a specific field in ascending order?",
+    "code": "db.collection.createIndex({ fieldName: 1 })",
+    "type": "MCQ",
+    "options": {
+      "A": "Text Index",
+      "B": "Hashed Index",
+      "C": "Single Field Index (ascending)",
+      "D": "Geospatial Index"
+    },
+    "correct": ["C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 8,
+    "text": "In React, when does the cleanup function returned by `useEffect` typically execute?",
+    "code": "useEffect(() => {\n  console.log('Effect ran');\n  return () => {\n    console.log('Cleanup ran');\n  };\n}, [dependency]);",
+    "type": "MCQ",
+    "options": {
+      "A": "Only when the component unmounts.",
+      "B": "Before the component renders for the first time.",
+      "C": "Before the effect runs again due to a dependency change, and when the component unmounts.",
+      "D": "After every render, regardless of dependencies."
+    },
+    "correct": ["C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 9,
+    "text": "You want to design a responsive layout using Tailwind CSS where a `div` takes full width on small screens, half width on medium screens, and one-third width on large screens. Which of the following class combinations would achieve this?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "`w-full md:w-1/2 lg:w-1/3`",
+      "B": "`w-full sm:w-1/2 md:w-1/3`",
+      "C": "`col-span-12 md:col-span-6 lg:col-span-4` (within a grid)",
+      "D": "`width-full medium:width-half large:width-third`"
+    },
+    "correct": ["A", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 10,
+    "text": "When implementing user authentication in an Express.js application using JSON Web Tokens (JWTs), which of the following are crucial considerations?",
+    "code": "const jwt = require('jsonwebtoken');\nconst token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });",
+    "type": "MSQ",
+    "options": {
+      "A": "Storing the JWT in `localStorage` on the client-side for persistent sessions.",
+      "B": "Using HTTPS to protect JWTs during transmission.",
+      "C": "Implementing middleware to verify the JWT on protected routes.",
+      "D": "Storing sensitive user data directly within the JWT payload."
+    },
+    "correct": ["B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 11,
+    "text": "You have a deeply nested component tree in React, and several components need access to the current user's authentication status. What is the most idiomatic way to share this state without prop drilling?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Pass the authentication status as props through every component in the tree.",
+      "B": "Use the React Context API to provide the authentication status.",
+      "C": "Store the authentication status in a global JavaScript variable.",
+      "D": "Use a state management library like Redux or Zustand."
+    },
+    "correct": ["B", "D"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 12,
+    "text": "You are designing a MongoDB schema for a blog application. Each `post` can have multiple `comments`. What are valid strategies for storing comments related to a post?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Embedding comments directly within the `post` document if comments are few and rarely updated.",
+      "B": "Creating a separate `comments` collection and referencing `postId` in each comment document.",
+      "C": "Using a `DBRef` to link `post` and `comment` documents, which is MongoDB's recommended approach for all relationships.",
+      "D": "Storing only the count of comments in the `post` document and fetching comments separately."
+    },
+    "correct": ["A", "B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 13,
+    "text": "Which of the following Node.js features is commonly used in Express.js route handlers to manage asynchronous operations like database queries or external API calls?",
+    "code": "app.get('/data', async (req, res) => {\n  const result = await fetchDataFromDB();\n  res.json(result);\n});",
+    "type": "MCQ",
+    "options": {
+      "A": "Callbacks",
+      "B": "Promises with `async/await`",
+      "C": "Event Emitters",
+      "D": "Child Processes"
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 14,
+    "text": "How can you add a custom color, say `brand-purple`, to your Tailwind CSS configuration so you can use classes like `text-brand-purple`?",
+    "code": "module.exports = {\n  theme: {\n    extend: {\n      colors: {\n        // Your custom colors here\n      }\n    }\n  },\n  plugins: [],\n}",
+    "type": "MCQ",
+    "options": {
+      "A": "Add `brand-purple: '#6B46C1'` directly to `theme.colors`.",
+      "B": "Add `brand-purple: '#6B46C1'` to `theme.extend.colors`.",
+      "C": "Define it as a CSS variable and reference it in `tailwind.config.js`.",
+      "D": "It's not possible to add custom colors; you must use existing ones."
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 15,
+    "text": "You need to implement a reusable piece of logic in React that manages a counter with increment and decrement functions, and also persists the counter value to `localStorage`. What is the most appropriate React feature for this?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "A Higher-Order Component (HOC).",
+      "B": "A Render Prop component.",
+      "C": "A custom Hook.",
+      "D": "A utility function imported into each component."
+    },
+    "correct": ["C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 16,
+    "text": "In MongoDB, when would you typically use a multi-document transaction?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "When performing a single `insertOne` operation.",
+      "B": "When updating multiple documents in a single collection that are not related.",
+      "C": "When you need to ensure atomicity and consistency across multiple write operations on different documents or collections.",
+      "D": "When querying data across multiple collections using `$lookup`."
+    },
+    "correct": ["C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 17,
+    "text": "When designing a RESTful API with Express.js for managing a resource like `products`, which HTTP methods and corresponding actions are generally considered best practice?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "GET `/products` to retrieve a list of products.",
+      "B": "POST `/products` to create a new product.",
+      "C": "PUT `/products/:id` to partially update an existing product.",
+      "D": "DELETE `/products/:id` to remove a specific product."
+    },
+    "correct": ["A", "B", "D"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 18,
+    "text": "You are building a form in React with multiple input fields. Which of the following are recommended approaches for managing form state and handling input changes efficiently?",
+    "code": "function MyForm() {\n  const [formData, setFormData] = useState({ name: '', email: '' });\n\n  const handleChange = (e) => {\n    setFormData({ ...formData, [e.target.name]: e.target.value });\n  };\n\n  return (\n    <form>\n      <input type=\"text\" name=\"name\" value={formData.name} onChange={handleChange} />\n      <input type=\"email\" name=\"email\" value={formData.email} onChange={handleChange} />\n    </form>\n  );\n}",
+    "type": "MSQ",
+    "options": {
+      "A": "Using a single state object to hold all form field values.",
+      "B": "Creating a separate `useState` hook for each individual input field.",
+      "C": "Implementing a generic `handleChange` function that updates state based on input `name` attribute.",
+      "D": "Allowing input fields to manage their own state (uncontrolled components) for complex forms."
+    },
+    "correct": ["A", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 19,
+    "text": "Which of the following statements about Tailwind CSS and its features (like JIT mode or plugins) are true?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "JIT (Just-In-Time) mode compiles CSS on demand as you write HTML, leading to faster development and smaller file sizes.",
+      "B": "Tailwind plugins allow you to add new utility classes or extend existing ones.",
+      "C": "Tailwind CSS requires you to write custom CSS for every single style property.",
+      "D": "Tailwind's utility-first approach means you never need to write any custom CSS."
+    },
+    "correct": ["A", "B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 20,
+    "text": "Your React frontend application, running on `http://localhost:3000`, needs to make API requests to your Express.js backend, running on `http://localhost:5000`. What common issue might you encounter, and how is it typically resolved in Express.js?",
+    "code": "const cors = require('cors');\napp.use(cors());",
+    "type": "MCQ",
+    "options": {
+      "A": "Authentication errors, resolved by sending JWTs in headers.",
+      "B": "CORS (Cross-Origin Resource Sharing) errors, resolved by using the `cors` middleware.",
+      "C": "Routing conflicts, resolved by ensuring unique API endpoints.",
+      "D": "Database connection issues, resolved by configuring MongoDB URI."
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 21,
+    "text": "In a React application using React Router DOM, how would you programmatically navigate a user to a different route after a successful form submission?",
+    "code": "import { useNavigate } from 'react-router-dom';\n\nfunction MyForm() {\n  const navigate = useNavigate();\n\n  const handleSubmit = () => {\n    // ... form submission logic ...\n    navigate('/dashboard');\n  };\n\n  return <button onClick={handleSubmit}>Submit</button>;\n}",
+    "type": "MCQ",
+    "options": {
+      "A": "By using `window.location.href = '/dashboard';`",
+      "B": "By importing and calling `useNavigate()` hook and then `navigate('/dashboard')`.",
+      "C": "By rendering a `<Redirect to=\"/dashboard\" />` component.",
+      "D": "By directly manipulating the browser history object."
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 22,
+    "text": "For a high-traffic MongoDB application requiring high availability and horizontal scalability, which features are essential to consider?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Replication (Replica Sets) for data redundancy and automatic failover.",
+      "B": "Sharding for distributing data across multiple servers and improving write/read capacity.",
+      "C": "Using `db.collection.find().limit(1)` for all queries to reduce load.",
+      "D": "Implementing a robust indexing strategy to optimize query performance."
+    },
+    "correct": ["A", "B", "D"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 23,
+    "text": "You are building a real-time chat application using Node.js. Which technologies or concepts are most suitable for enabling instant, bidirectional communication between the server and clients?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Long Polling with standard HTTP requests.",
+      "B": "WebSockets (e.g., using Socket.IO).",
+      "C": "Server-Sent Events (SSE).",
+      "D": "Regular REST API calls with short intervals."
+    },
+    "correct": ["B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 24,
+    "text": "In a React application, a component deep in the tree throws an unhandled JavaScript error during rendering. Which of the following mechanisms can prevent this error from crashing the entire application and display a fallback UI?",
+    "code": "class ErrorBoundary extends React.Component {\n  constructor(props) {\n    super(props);\n    this.state = { hasError: false };\n  }\n\n  static getDerivedStateFromError(error) {\n    return { hasError: true };\n  }\n\n  componentDidCatch(error, errorInfo) {\n    console.log(error, errorInfo);\n  }\n\n  render() {\n    if (this.state.hasError) {\n      return <h1>Something went wrong.</h1>;\n    }\n    return this.props.children;\n  }\n}",
+    "type": "MSQ",
+    "options": {
+      "A": "Using `try...catch` blocks around the problematic component's JSX.",
+      "B": "Implementing an Error Boundary component.",
+      "C": "Wrapping the root component in a global `window.onerror` handler.",
+      "D": "Using `useEffect` with a cleanup function to catch errors."
+    },
+    "correct": ["B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 25,
+    "text": "You need to store a user's date of birth in a MongoDB document. Which BSON data type is generally recommended for storing dates and times?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "String",
+      "B": "Date",
+      "C": "Timestamp",
+      "D": "Number (Unix epoch)"
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  }
+]

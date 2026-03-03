@@ -13,8 +13,32 @@ const Dheader = ({ toggleSidebar }) => {
 
   useEffect(() => {
     fetchUser();
+    // listen for profile updates from profile page
+    const onProfile = (e) => {
+      const data = e?.detail || {};
+      // resolve and append cache-buster if available
+      const raw = data.profileImage || data.profilePhoto || "";
+      const resolved = resolveAsset(raw);
+      const ts = data.__updatedAt || Date.now();
+      const shouldBust = raw && (raw.startsWith('/uploads') || raw.startsWith('uploads') || (resolved && resolved.includes('/uploads')));
+      const withTs = resolved && shouldBust ? (resolved.includes('?') ? `${resolved}&t=${ts}` : `${resolved}?t=${ts}`) : resolved || "";
+      setUser({
+        name: data.fullName || data.name || data.username || "",
+        profilePhoto: withTs,
+      });
+    };
+    window.addEventListener('profileUpdated', onProfile);
+    return () => window.removeEventListener('profileUpdated', onProfile);
     // eslint-disable-next-line
   }, []);
+
+  const resolveAsset = (p) => {
+    if (!p) return p;
+    const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+    // Accept both leading slash and non-leading 'uploads' paths
+    if (p.startsWith('/uploads') || p.startsWith('uploads')) return `${base}${p.startsWith('/') ? p : '/' + p}`;
+    return p;
+  };
 
   const fetchUser = async () => {
     try {
@@ -23,9 +47,13 @@ const Dheader = ({ toggleSidebar }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = res.data?.user || {};
+      const raw = data.profileImage || data.profilePhoto || "";
+      const r = resolveAsset(raw);
+      const shouldBust = raw && (raw.startsWith('/uploads') || raw.startsWith('uploads') || (r && r.includes('/uploads')));
+      const profilePhoto = r && shouldBust ? (r.includes('?') ? `${r}&t=${Date.now()}` : `${r}?t=${Date.now()}`) : (r || "");
       setUser({
-        name: data.name || "",
-        profilePhoto: data.profilePhoto || "",
+        name: data.fullName || data.name || data.username || "",
+        profilePhoto,
       });
     } catch {
       setUser({ name: "", profilePhoto: "" });

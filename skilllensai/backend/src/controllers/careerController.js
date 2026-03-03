@@ -1,4 +1,3 @@
-
 const Career = require("../models/Career");
 const User = require("../models/User");
 const fs = require("fs");
@@ -19,11 +18,11 @@ exports.saveCareer = async (req, res) => {
   try {
     const userId = req.user.id;
     const update = { ...req.body, userId };
-    const career = await Career.findOneAndUpdate(
-      { userId },
-      update,
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
+    const career = await Career.findOneAndUpdate({ userId }, update, {
+      returnDocument: "after",
+      upsert: true,
+      setDefaultsOnInsert: true,
+    });
     res.json(career);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -34,14 +33,18 @@ exports.saveCareer = async (req, res) => {
 exports.uploadResume = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    if (req.file.mimetype !== "application/pdf") return res.status(400).json({ message: "Only PDF files allowed" });
+    if (req.file.mimetype !== "application/pdf")
+      return res.status(400).json({ message: "Only PDF files allowed" });
     const resumeUrl = req.file.path.replace(/\\/g, "/");
     const data = await Career.findOneAndUpdate(
       { userId: req.user.id },
       { resumeUrl },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: "after", upsert: true, setDefaultsOnInsert: true },
     );
-    res.json({ message: "Resume uploaded successfully", resumeUrl: data.resumeUrl });
+    res.json({
+      message: "Resume uploaded successfully",
+      resumeUrl: data.resumeUrl,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -51,14 +54,18 @@ exports.uploadResume = async (req, res) => {
 exports.uploadResult = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    if (req.file.mimetype !== "application/pdf") return res.status(400).json({ message: "Only PDF files allowed" });
+    if (req.file.mimetype !== "application/pdf")
+      return res.status(400).json({ message: "Only PDF files allowed" });
     const resultUrl = req.file.path.replace(/\\/g, "/");
     const data = await Career.findOneAndUpdate(
       { userId: req.user.id },
       { resultUrl },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: "after", upsert: true, setDefaultsOnInsert: true },
     );
-    res.json({ message: "Result uploaded successfully", resultUrl: data.resultUrl });
+    res.json({
+      message: "Result uploaded successfully",
+      resultUrl: data.resultUrl,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -68,9 +75,11 @@ exports.uploadResult = async (req, res) => {
 exports.downloadResume = async (req, res) => {
   try {
     const data = await Career.findOne({ userId: req.user.id }, "resumeUrl");
-    if (!data || !data.resumeUrl) return res.status(404).json({ message: "No resume found for the user" });
+    if (!data || !data.resumeUrl)
+      return res.status(404).json({ message: "No resume found for the user" });
     const filePath = path.join(__dirname, "../../", data.resumeUrl);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "Resume file not found" });
+    if (!fs.existsSync(filePath))
+      return res.status(404).json({ message: "Resume file not found" });
     res.download(filePath, path.basename(filePath));
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -81,9 +90,11 @@ exports.downloadResume = async (req, res) => {
 exports.downloadResult = async (req, res) => {
   try {
     const data = await Career.findOne({ userId: req.user.id }, "resultUrl");
-    if (!data || !data.resultUrl) return res.status(404).json({ message: "No result found for the user" });
+    if (!data || !data.resultUrl)
+      return res.status(404).json({ message: "No result found for the user" });
     const filePath = path.join(__dirname, "../../", data.resultUrl);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "Result file not found" });
+    if (!fs.existsSync(filePath))
+      return res.status(404).json({ message: "Result file not found" });
     res.download(filePath, path.basename(filePath));
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -91,39 +102,4 @@ exports.downloadResult = async (req, res) => {
 };
 
 // upload resume controller
-exports.uploadResume = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    if (!req.file) {
-      return res.status(400).json({ message: "no file uploaded" });
-    }
-
-    // backend resume path
-    const backendPath = req.file.path;
-
-    // ml-service upload folder path
-    const mlUploadPath = path.join(
-      __dirname,
-      "../../../ml-service/uploads/",
-      req.file.filename
-    );
-
-    // copy file to ml-service
-    fs.copyFileSync(backendPath, mlUploadPath);
-
-    // save filename in user db
-    const user = await User.findById(userId);
-    user.resume = req.file.filename;
-    await user.save();
-
-    res.json({
-      message: "resume uploaded successfully",
-      filename: req.file.filename,
-    });
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "server error" });
-  }
-};
+// (legacy helper removed) use routes in careerRoutes.js for resume uploads
