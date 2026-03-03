@@ -5,7 +5,7 @@ import pdfplumber  # library for read pdf
 import os  # library for path
 import re  # library for regex
 
-app = FastAPI()  # create app
+app = FastAPI()  # create app with fastapi
 
 
 # request model
