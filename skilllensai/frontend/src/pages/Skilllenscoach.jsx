@@ -34,6 +34,10 @@ const SkillLensCoach = () => {
   const [loading, setLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [openStep, setOpenStep] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [genMessage, setGenMessage] = useState('');
+  const [starting, setStarting] = useState(false);
+  const [genJobId, setGenJobId] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [career, setCareer] = useState(null);
   const [profileData, setProfileData] = useState(null);
@@ -51,6 +55,11 @@ const SkillLensCoach = () => {
         const me = await api.get("/career/me");
         setCareer(me.data || null);
         if (me.data && Array.isArray(me.data.selectedSkills)) setSelected(me.data.selectedSkills || []);
+      } catch (e) {}
+      try {
+        // load selected skills from quiz service (persisted)
+        const ss = await api.get('/quiz/selected-skills');
+        if (ss.data && Array.isArray(ss.data.skills)) setSelected(ss.data.skills || []);
       } catch (e) {}
       try {
         // Fetch full user profile which often contains detailed education/cgpa fields
@@ -85,7 +94,7 @@ const SkillLensCoach = () => {
   const saveSkills = async () => {
     try {
       setLoading(true);
-      await api.post("/career/select-skills", { selectedSkills: selected });
+      await api.post('/quiz/selected-skills', { skills: selected });
       alert("Skills saved");
     } catch (e) {
       alert("Error saving skills");
@@ -97,19 +106,86 @@ const SkillLensCoach = () => {
   const resetSkills = async () => {
     try {
       setSelected([]);
-      await api.post("/career/select-skills", { selectedSkills: [] });
+      await api.post('/quiz/selected-skills', { skills: [] });
     } catch (e) {}
   };
 
   const handleStartQuiz = async () => {
     if (selected.length === 0) return alert("Select at least one skill first");
+    if (generating || starting) return; // prevent re-entrancy
     try {
+      setGenerating(true);
+      setStarting(false);
+      setGenMessage('Generating question paper...');
+      // trigger generation job
+      const genResp = await api.post('/quiz/generate', { skills: selected });
+      const jobId = genResp.data.jobId;
+      setGenJobId(jobId);
+
+      // poll status until completed or failed (no fixed timeout). If status endpoint missing (404),
+      // fallback to polling the presence of questionpaper.json via /quiz/paper-status.
+      let status = null;
+      let backoff = 1000; // start 1s
+      let pollCount = 0;
+      let usePaperFallback = false;
+      while (true) {
+        try {
+          const st = await api.get(`/quiz/generate/status?jobId=${jobId}`);
+          status = st.data.status;
+          pollCount += 1;
+          if (status === 'completed') break;
+          if (status === 'failed') throw new Error(st.data.error || 'generation failed');
+          setGenMessage(`Waiting for generation: ${status} (poll ${pollCount})`);
+        } catch (statusErr) {
+          // if 404, enable fallback mode to poll for the generated file
+          if (statusErr.response && statusErr.response.status === 404) {
+            usePaperFallback = true;
+            setGenMessage('Waiting for question paper (fallback) ...');
+            break;
+          }
+          throw statusErr;
+        }
+        await new Promise((r) => setTimeout(r, backoff));
+        backoff = Math.min(10000, Math.round(backoff * 1.5));
+      }
+
+      // fallback: poll for paper file if needed
+      if (usePaperFallback) {
+        let paperBackoff = 1000;
+        while (true) {
+          const ps = await api.get('/quiz/paper-status');
+          if (ps.data && ps.data.exists) break;
+          setGenMessage(`Waiting for question paper (file not yet present) ...`);
+          await new Promise((r) => setTimeout(r, paperBackoff));
+          paperBackoff = Math.min(10000, Math.round(paperBackoff * 1.5));
+        }
+      }
+      // start the quiz after generation completes
+      setGenMessage('Starting quiz...');
+      setStarting(true);
       const resp = await startQuiz({ skills: selected, quizName: "SkillLens Quiz" });
       const { attemptId } = resp.data;
-      // Open exam in dedicated full-screen route that hides dashboard layout
       navigate(`/exam?attemptId=${attemptId}`);
     } catch (e) {
-      alert("Failed to start quiz");
+      console.error(e);
+      // attempt to fetch logs for job
+      try {
+        if (genJobId) {
+          const logs = await api.get(`/quiz/generate/logs?jobId=${genJobId}`);
+          const out = logs.data.stdout || '';
+          const err = logs.data.stderr || logs.data.error || '';
+          alert(`Generation failed: ${e.message}\n\nLogs:\n${err || out || 'no logs'}`);
+        } else {
+          alert(`Failed to start quiz: ${e.message || 'Server error'}`);
+        }
+      } catch (le) {
+        alert(`Failed to start quiz: ${e.message || 'Server error'}`);
+      }
+    } finally {
+      setGenerating(false);
+      setStarting(false);
+      setGenMessage('');
+      setGenJobId(null);
     }
   };
 
@@ -203,6 +279,15 @@ const SkillLensCoach = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
+      {(generating || starting) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-3 shadow-lg">
+            <div className="animate-spin rounded-full border-4 border-t-4 border-gray-200 border-t-blue-600 h-12 w-12"></div>
+            <div className="text-lg font-semibold">{genMessage || (starting ? 'Starting quiz...' : 'Generating question paper...')}</div>
+            <div className="text-sm text-gray-500">Please wait — this may take up to a minute.</div>
+          </div>
+        </div>
+      )}
       {/* Header: Premium name + info */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-8 px-8 flex flex-col md:flex-row items-center md:justify-between rounded-b-3xl shadow-lg mb-8">
         <div className="flex items-center gap-5">
@@ -257,7 +342,7 @@ const SkillLensCoach = () => {
                 <div className="text-lg font-bold text-gray-800">Ready to test your skills?</div>
               </div>
               <div className="mb-3 text-sm text-gray-700">Selected skills: {selected.length > 0 ? selected.map((s,i) => <span key={i} className="text-blue-700 font-semibold mr-2">{s}</span>) : <span className="text-gray-400">None</span>}</div>
-              <button onClick={handleStartQuiz} className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition mb-6">Start Quiz</button>
+              <button onClick={handleStartQuiz} disabled={generating || starting} className={`px-6 py-2 rounded-lg font-semibold shadow mb-6 ${generating||starting ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}>Start Quiz</button>
             </div>
             {/* Quiz Attempts Table: Only in Step 2 */}
             <div className="bg-white rounded-xl shadow border border-blue-100 p-5">

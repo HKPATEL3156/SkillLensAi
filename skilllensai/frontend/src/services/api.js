@@ -69,6 +69,12 @@ export const startQuiz = (data) => api.post("/quiz/start", data);
 export const submitQuiz = (data) => api.post("/quiz/submit", data);
 export const saveQuizCheckpoint = (data) => api.post("/quiz/save", data);
 export const getQuizAttempts = () => api.get("/quiz/attempts");
+export const generateQuiz = (data) => api.post("/quiz/generate", data);
+export const getGenerateStatus = (jobId) =>
+  api.get(`/quiz/generate/status?jobId=${jobId}`);
+export const getGenerateLogs = (jobId) =>
+  api.get(`/quiz/generate/logs?jobId=${jobId}`);
+export const getPaperStatus = () => api.get("/quiz/paper-status");
 
 export const changePassword = (data) => api.post("/auth/change-password", data);
 export const deleteAccount = () => api.delete("/auth/delete-account");

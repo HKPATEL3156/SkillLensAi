@@ -1,353 +1,427 @@
 [
   {
     "id": 1,
-    "text": "A team of 5 developers can complete a project in 20 days. If 2 developers leave after 10 days, how many more days will the remaining team take to finish the project?",
-    "code": null,
-    "type": "MSQ",
+    "text": "What will be the output of this Python code snippet?",
+    "code": "[x*2 for x in range(3)]",
+    "type": "MCQ",
     "options": {
-      "A": "15 days",
-      "B": "16.67 days",
-      "C": "20 days",
-      "D": "10 days"
+      "A": "[0, 2, 4]",
+      "B": "[0, 1, 2]",
+      "C": "[0, 2, 4, 6]",
+      "D": "Error"
     },
-    "correct": ["B"],
-    "difficulty": "medium"
+    "correct": [
+      "A"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": 2,
-    "text": "Which number logically completes the sequence: 2, 6, 12, 20, 30, ?",
-    "code": null,
+    "text": "How would you create a Pandas DataFrame from a dictionary `data`?",
+    "code": "import pandas as pd\ndata = {'col1': [1, 2], 'col2': [3, 4]}",
     "type": "MCQ",
     "options": {
-      "A": "40",
-      "B": "42",
-      "C": "44",
-      "D": "38"
+      "A": "pd.DataFrame(data)",
+      "B": "pd.Series(data)",
+      "C": "pd.DataFrame.from_dict(data)",
+      "D": "DataFrame(data)"
     },
-    "correct": ["B"],
+    "correct": [
+      "A"
+    ],
     "difficulty": "easy"
   },
   {
     "id": 3,
-    "text": "If a product's price increased by 20% last year and then decreased by 10% this year, what is the net percentage change in its price?",
+    "text": "Which SQL keyword is used to return only unique values in a result set?",
     "code": null,
     "type": "MCQ",
     "options": {
-      "A": "8% increase",
-      "B": "10% increase",
-      "C": "10% decrease",
-      "D": "8% decrease"
+      "A": "UNIQUE",
+      "B": "DIFFERENT",
+      "C": "DISTINCT",
+      "D": "SINGLE"
     },
-    "correct": ["A"],
-    "difficulty": "medium"
+    "correct": [
+      "C"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": 4,
-    "text": "A company observes that employees who attend optional weekly training sessions have 15% higher productivity. Management concludes that making these sessions mandatory will increase overall company productivity significantly.",
-    "code": null,
-    "type": "MSQ",
+    "text": "What will be the shape of `arr` after executing this code?",
+    "code": "import numpy as np\narr = np.array([[1,2,3],[4,5,6]])",
+    "type": "MCQ",
     "options": {
-      "A": "The employees who attend are already more motivated.",
-      "B": "The training content is directly responsible for the productivity increase.",
-      "C": "Mandatory attendance might decrease employee morale.",
-      "D": "The sample size of employees attending is too small to generalize."
+      "A": "(2, 3)",
+      "B": "(3, 2)",
+      "C": "(6,)",
+      "D": "(2,)"
     },
-    "correct": ["A", "C"],
-    "difficulty": "hard"
+    "correct": [
+      "A"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": 5,
-    "text": "Consider two tables: `Users` (id, name) and `Orders` (order_id, user_id, amount). `Users` has (1, 'Alice'), (2, 'Bob'), (3, 'Charlie'). `Orders` has (101, 1, 50), (102, 1, 75), (103, 4, 100).",
-    "code": "SELECT U.name, O.order_id FROM Users U LEFT JOIN Orders O ON U.id = O.user_id;",
-    "type": "MSQ",
-    "options": {
-      "A": "Alice, 101",
-      "B": "Alice, 102",
-      "C": "Bob, NULL",
-      "D": "Charlie, NULL",
-      "E": "NULL, 103"
-    },
-    "correct": ["A", "B", "C", "D"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 6,
-    "text": "Given a table `Sales` with columns `product_id` and `revenue`. Which query correctly finds the total revenue for each product?",
-    "code": "SELECT product_id, SUM(revenue) FROM Sales GROUP BY product_id;",
-    "type": "MCQ",
-    "options": {
-      "A": "SELECT product_id, SUM(revenue) FROM Sales;",
-      "B": "SELECT product_id, AVG(revenue) FROM Sales GROUP BY product_id;",
-      "C": "SELECT product_id, SUM(revenue) FROM Sales GROUP BY product_id;",
-      "D": "SELECT SUM(revenue) FROM Sales GROUP BY product_id;"
-    },
-    "correct": ["C"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 7,
-    "text": "You need to calculate a running total of `sales_amount` for each `product_id` ordered by `sale_date`. Which SQL approach is generally more efficient and appropriate?",
+    "text": "Which of the following Python data types are immutable?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Using a subquery with `GROUP BY` and `JOIN` for each row.",
-      "B": "Using a window function like `SUM(sales_amount) OVER (PARTITION BY product_id ORDER BY sale_date)`.",
-      "C": "Creating a temporary table and iterating through it with a cursor.",
-      "D": "Window functions are typically optimized for such cumulative calculations."
+      "A": "List",
+      "B": "Tuple",
+      "C": "Dictionary",
+      "D": "String"
     },
-    "correct": ["B", "D"],
-    "difficulty": "hard"
+    "correct": [
+      "B",
+      "D"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": 6,
+    "text": "Given a DataFrame `df` with columns 'Name' and 'Age', how do you select rows where 'Age' is greater than 25?",
+    "code": "import pandas as pd\ndf = pd.DataFrame({'Name': ['A', 'B', 'C'], 'Age': [20, 30, 25]})",
+    "type": "MSQ",
+    "options": {
+      "A": "df[df['Age'] > 25]",
+      "B": "df.query('Age > 25')",
+      "C": "df.loc[df['Age'] > 25]",
+      "D": "df.filter(items=['Age'] > 25)"
+    },
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": 7,
+    "text": "Which of the following are valid SQL JOIN types?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "INNER JOIN",
+      "B": "LEFT JOIN",
+      "C": "RIGHT JOIN",
+      "D": "CROSS JOIN"
+    },
+    "correct": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": 8,
-    "text": "Consider a query to find users who have placed orders. Which of the following SQL constructs is generally preferred for performance?",
-    "code": "SELECT U.name FROM Users U WHERE U.id IN (SELECT O.user_id FROM Orders O);\nSELECT U.name FROM Users U JOIN Orders O ON U.id = O.user_id GROUP BY U.name;",
+    "text": "What will be printed if `divide(10, 0)` is called?",
+    "code": "def divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return \"Cannot divide by zero\"\n    except:\n        return \"An error occurred\"",
     "type": "MCQ",
     "options": {
-      "A": "Using `WHERE IN` with a subquery is always faster.",
-      "B": "Using `JOIN` with `GROUP BY` is generally more optimized by query planners.",
-      "C": "Both perform identically in all database systems.",
-      "D": "Using `EXISTS` is always the fastest option."
+      "A": "10.0",
+      "B": "Cannot divide by zero",
+      "C": "An error occurred",
+      "D": "Error"
     },
-    "correct": ["B"],
+    "correct": [
+      "B"
+    ],
     "difficulty": "medium"
   },
   {
     "id": 9,
-    "text": "A `Customers` table has millions of records. Queries frequently filter by `last_name` and sort by `registration_date`. What indexing strategy would be most beneficial?",
-    "code": null,
-    "type": "MSQ",
+    "text": "What is the result of `arr + 5`?",
+    "code": "import numpy as np\narr = np.array([1, 2, 3])",
+    "type": "MCQ",
     "options": {
-      "A": "Create a clustered index on `last_name`.",
-      "B": "Create a non-clustered index on `registration_date`.",
-      "C": "Create a composite non-clustered index on (`last_name`, `registration_date`).",
-      "D": "Create a non-clustered index on `last_name` and another on `registration_date`."
+      "A": "[6, 7, 8]",
+      "B": "[1, 2, 3, 5]",
+      "C": "Error",
+      "D": "[5, 5, 5]"
     },
-    "correct": ["C", "D"],
-    "difficulty": "hard"
+    "correct": [
+      "A"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": 10,
-    "text": "What is the output of the following SQL query, assuming `value` column can contain NULLs?",
-    "code": "SELECT COUNT(*) FROM my_table WHERE value = NULL;",
+    "text": "How do you calculate the average 'Score' for each 'Category' in `df`?",
+    "code": "import pandas as pd\ndf = pd.DataFrame({'Category': ['A', 'B', 'A'], 'Score': [10, 20, 15]})",
     "type": "MCQ",
     "options": {
-      "A": "Counts all rows where value is NULL.",
-      "B": "Counts zero rows.",
-      "C": "Throws a syntax error.",
-      "D": "Counts all rows in the table."
+      "A": "df.groupby('Category')['Score'].mean()",
+      "B": "df.mean(by='Category')['Score']",
+      "C": "df.aggregate('mean', by='Category')",
+      "D": "df.groupby('Category').mean()"
     },
-    "correct": ["B"],
-    "difficulty": "easy"
+    "correct": [
+      "A"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": 11,
-    "text": "What will be the output of the following Python code snippet?",
-    "code": "data = [1, 2, 3, 4, 5]\nresult = [x * 2 for x in data if x % 2 == 0]\nprint(result)",
+    "text": "You are designing a `users` table. Which data types would you use for `username` (short text) and `bio` (long text) in MySQL?",
+    "code": null,
     "type": "MCQ",
     "options": {
-      "A": "[2, 4, 6, 8, 10]",
-      "B": "[4, 8]",
-      "C": "[2, 6, 10]",
-      "D": "[1, 2, 3, 4, 5]"
+      "A": "username: INT, bio: VARCHAR",
+      "B": "username: VARCHAR, bio: TEXT",
+      "C": "username: TEXT, bio: INT",
+      "D": "username: BOOLEAN, bio: VARCHAR"
     },
-    "correct": ["B"],
+    "correct": [
+      "B"
+    ],
     "difficulty": "easy"
   },
   {
     "id": 12,
-    "text": "A junior developer wrote this function. When called multiple times without arguments, it produces unexpected results. What is the issue and how to fix it?",
-    "code": "def add_item(item, my_list=[]):\n    my_list.append(item)\n    return my_list\n\nprint(add_item(1))\nprint(add_item(2))\nprint(add_item(3, []))",
-    "type": "MSQ",
+    "text": "What will be the output of the following code?",
+    "code": "def add_item(item, my_list=[]):\n    my_list.append(item)\n    return my_list\nprint(add_item(1))\nprint(add_item(2))",
+    "type": "MCQ",
     "options": {
-      "A": "The default argument `my_list` is mutable and shared across calls.",
-      "B": "The function should be rewritten to `def add_item(item, my_list=None): if my_list is None: my_list = []`.",
-      "C": "The output will be `[1]`, `[1, 2]`, `[3]`.",
-      "D": "The output will be `[1]`, `[2]`, `[3]`."
+      "A": "[1]\n[2]",
+      "B": "[1]\n[1, 2]",
+      "C": "[1, 2]\n[1, 2]",
+      "D": "Error"
     },
-    "correct": ["A", "B", "C"],
-    "difficulty": "medium"
+    "correct": [
+      "B"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": 13,
-    "text": "Which of the following statements about Python generators and lists is true regarding memory usage for large datasets?",
-    "code": "large_list = [i for i in range(10**6)]\nlarge_gen = (i for i in range(10**6))",
-    "type": "MCQ",
+    "text": "Given a DataFrame `df` with missing values, which methods can you use to handle them?",
+    "code": "import pandas as pd\nimport numpy as np\ndf = pd.DataFrame({'A': [1, 2, np.nan], 'B': [4, np.nan, 6]})",
+    "type": "MSQ",
     "options": {
-      "A": "Lists are more memory-efficient than generators.",
-      "B": "Generators load all items into memory at once, like lists.",
-      "C": "Generators produce items one by one, consuming less memory for large datasets.",
-      "D": "Both lists and generators have similar memory footprints."
+      "A": "df.dropna()",
+      "B": "df.fillna(0)",
+      "C": "df.interpolate()",
+      "D": "df.replace(np.nan, 0)"
     },
-    "correct": ["C"],
-    "difficulty": "medium"
+    "correct": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "difficulty": "hard"
   },
   {
     "id": 14,
-    "text": "You need to log the execution time of various functions without modifying their core logic. Which Python feature is best suited for this task?",
-    "code": "import time\ndef timer(func):\n    def wrapper(*args, **kwargs):\n        start = time.time()\n        result = func(*args, **kwargs)\n        end = time.time()\n        print(f'{func.__name__} took {end - start:.4f}s')\n        return result\n    return wrapper",
+    "text": "Which SQL commands are used to manage transactions?",
+    "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Using a decorator like `timer` is an elegant way to add cross-cutting concerns.",
-      "B": "This pattern is known as function composition.",
-      "C": "You would apply it as `@timer` above the function definition.",
-      "D": "It requires manually adding `start` and `end` time calculations inside each function."
+      "A": "COMMIT",
+      "B": "ROLLBACK",
+      "C": "SAVEPOINT",
+      "D": "UPDATE"
     },
-    "correct": ["A", "C"],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
     "difficulty": "hard"
   },
   {
     "id": 15,
-    "text": "What will be printed when the following Python code is executed?",
-    "code": "def divide(a, b):\n    try:\n        result = a / b\n    except ZeroDivisionError:\n        return 'Cannot divide by zero!'\n    except TypeError:\n        return 'Invalid types!'\n    else:\n        return result\n    finally:\n        print('Operation attempted.')\n\nprint(divide(10, 0))",
-    "type": "MCQ",
-    "options": {
-      "A": "Operation attempted.\nCannot divide by zero!",
-      "B": "Cannot divide by zero!\nOperation attempted.",
-      "C": "Operation attempted.\nNone",
-      "D": "A ZeroDivisionError will be raised."
-    },
-    "correct": ["A"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 16,
-    "text": "Consider a Python dictionary `d = {'a': 1, 'b': 2}`. Which of the following statements about `d.keys()` and `d.items()` are true?",
-    "code": "d = {'a': 1, 'b': 2}\nkeys_view = d.keys()\nitems_view = d.items()",
-    "type": "MSQ",
-    "options": {
-      "A": "`keys_view` is a list of keys.",
-      "B": "`items_view` provides a dynamic view of the dictionary's items.",
-      "C": "Modifying `d` after creating `keys_view` will reflect in `keys_view`.",
-      "D": "Both `keys_view` and `items_view` are iterable."
-    },
-    "correct": ["B", "C", "D"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 17,
-    "text": "A machine learning model performs exceptionally well on its training data (99% accuracy) but poorly on unseen test data (60% accuracy). What is the most likely problem?",
+    "text": "When is a Python generator generally preferred over a list?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "The model is underfitting the training data.",
-      "B": "The model is overfitting the training data.",
-      "C": "The test data might be from a different distribution than the training data.",
-      "D": "The model is too simple for the problem."
+      "A": "When memory usage is a concern",
+      "B": "When iterating over a very large dataset",
+      "C": "When you need to access elements by index multiple times",
+      "D": "When you only need to iterate once"
     },
-    "correct": ["B", "C"],
+    "correct": [
+      "A",
+      "B",
+      "D"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": 16,
+    "text": "You have a 1D NumPy array `arr` with 6 elements. You want to reshape it into a 3-row, 2-column matrix. Which code achieves this?",
+    "code": "import numpy as np\narr = np.array([1, 2, 3, 4, 5, 6])",
+    "type": "MSQ",
+    "options": {
+      "A": "arr.reshape(3, 2)",
+      "B": "arr.reshape(2, 3)",
+      "C": "arr.reshape(3, -1)",
+      "D": "arr.resize(3, 2)"
+    },
+    "correct": [
+      "A",
+      "C"
+    ],
+    "difficulty": "medium"
+  },
+  {
+    "id": 17,
+    "text": "Which statements accurately describe `pd.merge()` and `pd.concat()`?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "merge() combines DataFrames based on common columns/indices",
+      "B": "concat() stacks DataFrames along an axis",
+      "C": "merge() is primarily for joining tables like SQL JOINs",
+      "D": "concat() requires DataFrames to have the same columns"
+    },
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
     "difficulty": "medium"
   },
   {
     "id": 18,
-    "text": "Why is feature scaling (e.g., standardization or normalization) often important for machine learning algorithms?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "It makes the model more complex.",
-      "B": "It helps algorithms like Gradient Descent converge faster.",
-      "C": "It reduces the number of features in the dataset.",
-      "D": "It's only necessary for tree-based models."
-    },
-    "correct": ["B"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 19,
-    "text": "Regarding the bias-variance trade-off in machine learning, which statements are generally true?",
+    "text": "What are the benefits of adding an index to a database column?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "High bias models tend to be too simple and underfit the data.",
-      "B": "High variance models tend to be too complex and overfit the data.",
-      "C": "Increasing model complexity generally decreases bias and increases variance.",
-      "D": "The goal is to minimize both bias and variance simultaneously, which is always achievable."
+      "A": "Faster data retrieval for indexed columns",
+      "B": "Improves performance of WHERE clauses",
+      "C": "Ensures data uniqueness (with UNIQUE index)",
+      "D": "Increases write operation speed"
     },
-    "correct": ["A", "B", "C"],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": 19,
+    "text": "What are common use cases for Python decorators?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Logging function calls",
+      "B": "Measuring function execution time",
+      "C": "Adding authentication/authorization checks",
+      "D": "Modifying function arguments directly without wrapping"
+    },
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
     "difficulty": "hard"
   },
   {
     "id": 20,
-    "text": "What is the primary purpose of using cross-validation in machine learning model evaluation?",
-    "code": null,
+    "text": "What will be the 'Status' column after applying the function?",
+    "code": "import pandas as pd\ndf = pd.DataFrame({'Score': [70, 45, 90]})\ndef get_status(score):\n    return 'Pass' if score >= 50 else 'Fail'\ndf['Status'] = df['Score'].apply(get_status)",
     "type": "MCQ",
     "options": {
-      "A": "To increase the size of the training dataset.",
-      "B": "To prevent data leakage during feature engineering.",
-      "C": "To get a more reliable estimate of model performance on unseen data.",
-      "D": "To select the best features for the model."
+      "A": "['Pass', 'Fail', 'Pass']",
+      "B": "['Pass', 'Pass', 'Fail']",
+      "C": "['Fail', 'Pass', 'Fail']",
+      "D": "Error"
     },
-    "correct": ["C"],
+    "correct": [
+      "A"
+    ],
     "difficulty": "medium"
   },
   {
     "id": 21,
-    "text": "A data scientist is building a fraud detection model. Which of the following actions could lead to data leakage?",
+    "text": "Which statements are true regarding `DELETE FROM table` vs `TRUNCATE TABLE table` in MySQL?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Using future transaction data (not available at prediction time) as a feature.",
-      "B": "Normalizing the entire dataset before splitting into training and test sets.",
-      "C": "Including a feature like 'transaction_id' which is unique to each record.",
-      "D": "Performing feature selection only on the training set."
+      "A": "DELETE is a DML command, TRUNCATE is DDL",
+      "B": "TRUNCATE can be rolled back, DELETE cannot",
+      "C": "DELETE is faster for very large tables",
+      "D": "TRUNCATE resets AUTO_INCREMENT counter"
     },
-    "correct": ["A", "B"],
+    "correct": [
+      "A",
+      "D"
+    ],
     "difficulty": "hard"
   },
   {
     "id": 22,
-    "text": "A startup needs to host a new web application. They are considering both serverless functions (e.g., AWS Lambda) and traditional Virtual Machines (VMs). In which scenarios would serverless be a better fit?",
-    "code": null,
-    "type": "MSQ",
+    "text": "You need to retrieve a value from `my_dict` for key 'C'. If 'C' doesn't exist, you want to use 0 as a default. What's the correct method call?",
+    "code": "my_dict = {'A': 1, 'B': 2}",
+    "type": "MCQ",
     "options": {
-      "A": "Applications with highly unpredictable traffic spikes.",
-      "B": "Long-running batch processing jobs that require consistent compute resources.",
-      "C": "Microservices with stateless operations and event-driven architectures.",
-      "D": "Legacy applications requiring specific OS configurations and persistent storage."
+      "A": "my_dict['C'] if 'C' in my_dict else 0",
+      "B": "my_dict.get('C', 0)",
+      "C": "my_dict.setdefault('C', 0)",
+      "D": "my_dict['C'] or 0"
     },
-    "correct": ["A", "C"],
-    "difficulty": "medium"
+    "correct": [
+      "B"
+    ],
+    "difficulty": "easy"
   },
   {
     "id": 23,
-    "text": "In the cloud Shared Responsibility Model, who is typically responsible for patching the guest operating system on an IaaS (Infrastructure as a Service) VM?",
-    "code": null,
+    "text": "You have two NumPy arrays, `arr1` and `arr2`. You want to perform element-wise multiplication. What is the result?",
+    "code": "import numpy as np\narr1 = np.array([1, 2])\narr2 = np.array([3, 4])",
     "type": "MCQ",
     "options": {
-      "A": "The cloud provider.",
-      "B": "The customer.",
-      "C": "Both equally share the responsibility.",
-      "D": "A third-party security vendor."
+      "A": "[3, 8]",
+      "B": "[1, 2, 3, 4]",
+      "C": "Error",
+      "D": "[[3, 4], [6, 8]]"
     },
-    "correct": ["B"],
+    "correct": [
+      "A"
+    ],
     "difficulty": "easy"
   },
   {
     "id": 24,
-    "text": "A company is experiencing high cloud costs. What are effective strategies for cloud cost optimization?",
+    "text": "You need to read a file line by line safely in Python. Which practices are best?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Rightsizing resources to match actual usage.",
-      "B": "Deleting unused or orphaned resources.",
-      "C": "Migrating all workloads to on-premises servers.",
-      "D": "Utilizing reserved instances or savings plans for predictable workloads."
+      "A": "Using a 'with' statement for automatic resource management",
+      "B": "Closing the file explicitly with .close() after use",
+      "C": "Reading the entire file into memory using .read() for very large files",
+      "D": "Iterating directly over the file object"
     },
-    "correct": ["A", "B", "D"],
-    "difficulty": "hard"
+    "correct": [
+      "A",
+      "B",
+      "D"
+    ],
+    "difficulty": "medium"
   },
   {
     "id": 25,
-    "text": "Which of the following is a key principle for achieving high availability in cloud applications?",
+    "text": "You have a Pandas DataFrame `df` and want to insert its data into a MySQL table `my_table`. Which approaches are suitable?",
     "code": null,
-    "type": "MCQ",
+    "type": "MSQ",
     "options": {
-      "A": "Deploying all application components in a single availability zone.",
-      "B": "Relying on a single point of failure for critical services.",
-      "C": "Distributing workloads across multiple availability zones or regions.",
-      "D": "Minimizing the number of instances to reduce cost."
+      "A": "Using df.to_sql('my_table', con=engine, if_exists='append')",
+      "B": "Manually iterating DataFrame rows and executing individual INSERT statements",
+      "C": "Converting DataFrame to CSV and then using MySQL's LOAD DATA INFILE",
+      "D": "Using df.to_csv() and then pd.read_sql_table()"
     },
-    "correct": ["C"],
-    "difficulty": "medium"
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "difficulty": "hard"
   }
 ]
