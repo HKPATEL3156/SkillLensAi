@@ -162,10 +162,12 @@ const SkillLensCoach = () => {
     const cgpas = extractCgpas(career, profileData);
     const avgCgpa = cgpas.length ? (cgpas.reduce((a,b)=>a+b.cgpa,0)/cgpas.length) : 0;
     const academicGrade = Math.min(100, Number((avgCgpa * 10).toFixed(2)));
-    // latest submitted attempt's obtainedMarks
-    const latest = attempts.filter(a => a.status==='submitted').sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
-    const skillGrade = latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 0;
-    const avgGrade = Number(((academicGrade + Number(skillGrade))/2).toFixed(2));
+    // compute skill grade using the latest submitted attempt's average (not average across attempts)
+    const submittedAttempts = attempts.filter(a => a.status === 'submitted').slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    const latestAttempt = submittedAttempts[0];
+    const latestSkill = latestAttempt ? (latestAttempt.obtainedMarks ?? latestAttempt.totalMarks ?? 0) : 0;
+    const skillGrade = latestSkill; // raw skill marks from latest attempt
+    const avgGrade = Number(((academicGrade + Number(skillGrade)) / 2).toFixed(2));
 
     const payload = {
       academicGrade,
@@ -335,10 +337,16 @@ const SkillLensCoach = () => {
               </div>
 
               <div className="p-4 bg-white rounded shadow">
-                <div className="text-sm text-gray-500">Skill Grade (latest quiz)</div>
+                <div className="text-sm text-gray-500">Skill Grade (latest avg)</div>
                 <div className="text-2xl font-bold text-yellow-600">{(() => {
-                  const latest = attempts.filter(a=>a.status==='submitted').slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
-                  return latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 'N/A';
+                  const subs = attempts.filter(a => a.status === 'submitted').slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+                  if (!subs || subs.length === 0) return 'N/A';
+                  const latest = subs[0];
+                  const cgpas = extractCgpas(career, profileData);
+                  const academic = cgpas.length ? (cgpas.reduce((sum, item) => sum + (item.cgpa || 0), 0)/cgpas.length)*10 : 0;
+                  const skill = latest ? (latest.obtainedMarks ?? latest.totalMarks ?? 0) : 0;
+                  const avg = Number(((academic + Number(skill))/2).toFixed(2));
+                  return avg;
                 })()}</div>
               </div>
             </div>

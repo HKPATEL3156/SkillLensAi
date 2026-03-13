@@ -366,11 +366,11 @@ export default function QuizPage() {
 		await doSubmit(true);
 	}
 
-	async function doSubmit(isAuto = false) {
-		// Clear console logs and lock interactions
+	async function doSubmit(isAuto = false, callerOpts = {}) {
+		// Clear console logs and mark submission in progress
 		try { console.clear(); } catch (e) {}
-		setSubmitted(true);
-
+		// Use a transient submitting flag to avoid prematurely locking UI
+		// and to allow canceling modals without marking as submitted.
 		const MARKS_PER_QUESTION = 4;
 		const total = questions.length;
 		const attempted = Object.keys(answers).length;
@@ -392,14 +392,32 @@ export default function QuizPage() {
 				// count correctly selected options
 				let correctSelected = 0;
 				for (const c of correctSet) if (selSet.has(c)) correctSelected++;
-				// For MCQ (single correct option) require exact match to award full marks
+
+				// Choose marking scheme per-question (fallback to 'simple')
+				const scheme = (q.marking && q.marking.scheme) || q.markingScheme || (q.partialMarking ? 'partial' : 'simple');
+
+				// MCQ (single correct) - require exact match
 				if (correctSet.size === 1) {
 					const single = Array.from(correctSet)[0];
 					obtained = (selSet.size === 1 && selSet.has(single)) ? MARKS_PER_QUESTION : 0;
 				} else {
-					// MSQ: award partial marks proportional to correctly selected options
-					// No negative marking for incorrect extra selections
-					obtained = (correctSelected / correctSet.size) * MARKS_PER_QUESTION;
+					// MSQ rules as requested by product:
+					// - Simple (default): If any incorrect option selected -> 0
+					//   Otherwise award proportion: (correctSelected / totalCorrect) * full marks
+					// - Partial (optional): per-correct option share = MARKS_PER_QUESTION / totalCorrect
+					//   (still zero if any incorrect option selected unless question.allowsWrongPartial true)
+					const hasWrong = Array.from(selSet).some(s => !correctSet.has(s));
+					if (scheme === 'partial') {
+						if (hasWrong && !q.allowsWrongPartial) {
+							obtained = 0;
+						} else {
+							obtained = (correctSelected / correctSet.size) * MARKS_PER_QUESTION;
+						}
+					} else {
+						// 'simple' or unknown
+						if (hasWrong) obtained = 0;
+						else obtained = (correctSelected / correctSet.size) * MARKS_PER_QUESTION;
+					}
 				}
 			}
 			totalObtained += obtained;
@@ -424,14 +442,16 @@ export default function QuizPage() {
 			answers: resultAnswers,
 		};
 
-		// allow caller options via a second arg (internal use)
-		const callerOpts = arguments[1] || {};
+		// apply caller-provided overrides (internal use)
 		if (callerOpts.warningsUsed !== undefined) payload.warningsUsed = callerOpts.warningsUsed;
 		if (callerOpts.cheatingDetected) {
 			payload.cheatingDetected = true;
 			payload.submissionStatus = callerOpts.submissionStatus || 'auto-submitted-cheating';
 		}
 
+		// lock UI to prevent further interaction while submission is in progress
+		setInterfaceLocked(true);
+		setSubmitted(true);
 		try {
 			await submitQuiz({ attemptId, obtainedMarks: Number(totalObtained.toFixed(2)), totalMarks: maxMarks, status: payload.cheatingDetected ? 'auto-submitted-cheating' : 'submitted', answersSummary: payload });
 		} catch (e) {

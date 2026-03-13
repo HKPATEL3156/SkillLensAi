@@ -1,352 +1,353 @@
 [
   {
     "id": 1,
-    "text": "Which HTML elements are semantically appropriate for structuring a blog post with a title, author, date, and main content?",
+    "text": "A team of 5 developers can complete a project in 20 days. If 2 developers leave after 10 days, how many more days will the remaining team take to finish the project?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "<header>",
-      "B": "<section>",
-      "C": "<article>",
-      "D": "<div>"
+      "A": "15 days",
+      "B": "16.67 days",
+      "C": "20 days",
+      "D": "10 days"
     },
-    "correct": ["A", "B", "C"],
-    "difficulty": "easy"
+    "correct": ["B"],
+    "difficulty": "medium"
   },
   {
     "id": 2,
-    "text": "A user needs to input their email and a password (min 8 chars, max 16 chars). Which HTML5 input attributes would you use?",
+    "text": "Which number logically completes the sequence: 2, 6, 12, 20, 30, ?",
     "code": null,
-    "type": "MSQ",
+    "type": "MCQ",
     "options": {
-      "A": "type=\"email\"",
-      "B": "minlength=\"8\"",
-      "C": "maxlength=\"16\"",
-      "D": "pattern=\"[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$\""
+      "A": "40",
+      "B": "42",
+      "C": "44",
+      "D": "38"
     },
-    "correct": ["A", "B", "C"],
+    "correct": ["B"],
     "difficulty": "easy"
   },
   {
     "id": 3,
-    "text": "Which CSS property is NOT part of the standard CSS Box Model?",
+    "text": "If a product's price increased by 20% last year and then decreased by 10% this year, what is the net percentage change in its price?",
     "code": null,
     "type": "MCQ",
     "options": {
-      "A": "margin",
-      "B": "padding",
-      "C": "border-radius",
-      "D": "content"
+      "A": "8% increase",
+      "B": "10% increase",
+      "C": "10% decrease",
+      "D": "8% decrease"
     },
-    "correct": ["C"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 4,
-    "text": "Given the following CSS, what will be the final horizontal alignment of the items inside the container?",
-    "code": ".container {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}\n.item:nth-child(2) {\n  margin-left: auto;\n}",
-    "type": "MSQ",
-    "options": {
-      "A": "The first item will be at the start.",
-      "B": "The last item will be at the end.",
-      "C": "The second item will be pushed to the far right.",
-      "D": "Items will be evenly distributed with space between them."
-    },
-    "correct": ["A", "B", "C"],
+    "correct": ["A"],
     "difficulty": "medium"
   },
   {
-    "id": 5,
-    "text": "A developer wants to change the color of a button to red. Why might the button still appear blue, despite the new CSS rule?",
-    "code": "/* styles.css */\n#myButton { color: blue; }\n\n/* inline style */\n<button id=\"myButton\" style=\"color: green;\">Click Me</button>\n\n/* another.css */\n.button-class { color: red; }",
+    "id": 4,
+    "text": "A company observes that employees who attend optional weekly training sessions have 15% higher productivity. Management concludes that making these sessions mandatory will increase overall company productivity significantly.",
+    "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Inline styles have higher specificity than ID selectors.",
-      "B": "The `.button-class` rule is defined in a separate file.",
-      "C": "The `#myButton` rule has higher specificity than the class selector.",
-      "D": "The `!important` keyword might be used elsewhere."
+      "A": "The employees who attend are already more motivated.",
+      "B": "The training content is directly responsible for the productivity increase.",
+      "C": "Mandatory attendance might decrease employee morale.",
+      "D": "The sample size of employees attending is too small to generalize."
     },
-    "correct": ["A", "C", "D"],
+    "correct": ["A", "C"],
     "difficulty": "hard"
   },
   {
+    "id": 5,
+    "text": "Consider two tables: `Users` (id, name) and `Orders` (order_id, user_id, amount). `Users` has (1, 'Alice'), (2, 'Bob'), (3, 'Charlie'). `Orders` has (101, 1, 50), (102, 1, 75), (103, 4, 100).",
+    "code": "SELECT U.name, O.order_id FROM Users U LEFT JOIN Orders O ON U.id = O.user_id;",
+    "type": "MSQ",
+    "options": {
+      "A": "Alice, 101",
+      "B": "Alice, 102",
+      "C": "Bob, NULL",
+      "D": "Charlie, NULL",
+      "E": "NULL, 103"
+    },
+    "correct": ["A", "B", "C", "D"],
+    "difficulty": "easy"
+  },
+  {
     "id": 6,
-    "text": "What will be logged to the console when this JavaScript code executes?",
-    "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 100);\n}\nconsole.log('Done');",
+    "text": "Given a table `Sales` with columns `product_id` and `revenue`. Which query correctly finds the total revenue for each product?",
+    "code": "SELECT product_id, SUM(revenue) FROM Sales GROUP BY product_id;",
     "type": "MCQ",
     "options": {
-      "A": "0, 1, 2, Done",
-      "B": "Done, 0, 1, 2",
-      "C": "Done, 3, 3, 3",
-      "D": "0, 1, 2 (after 100ms), then Done"
+      "A": "SELECT product_id, SUM(revenue) FROM Sales;",
+      "B": "SELECT product_id, AVG(revenue) FROM Sales GROUP BY product_id;",
+      "C": "SELECT product_id, SUM(revenue) FROM Sales GROUP BY product_id;",
+      "D": "SELECT SUM(revenue) FROM Sales GROUP BY product_id;"
     },
     "correct": ["C"],
     "difficulty": "easy"
   },
   {
     "id": 7,
-    "text": "A developer is fetching data but wants to handle potential network errors gracefully. Which of the following approaches correctly handles errors in an `async/await` function?",
-    "code": "async function fetchData() {\n  try {\n    const response = await fetch('/api/data');\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Fetch failed:', error);\n    throw error;\n  }\n}",
-    "type": "MSQ",
-    "options": {
-      "A": "The `try...catch` block correctly catches network errors.",
-      "B": "Errors from `response.json()` would also be caught.",
-      "C": "Errors from `fetch()` itself are caught by the `catch` block.",
-      "D": "The `throw error;` ensures the error propagates for further handling."
-    },
-    "correct": ["A", "B", "C", "D"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 8,
-    "text": "Which of the following JavaScript array methods create a NEW array based on the original, without modifying the original?",
-    "code": "const numbers = [1, 2, 3];",
-    "type": "MSQ",
-    "options": {
-      "A": "map()",
-      "B": "filter()",
-      "C": "splice()",
-      "D": "slice()"
-    },
-    "correct": ["A", "B", "D"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 9,
-    "text": "What will be the output of this code snippet?",
-    "code": "function createCounter() {\n  let count = 0;\n  return {\n    increment: function() { count++; return count; },\n    decrement: function() { count--; return count; }\n  };\n}\nconst counter1 = createCounter();\nconst counter2 = createCounter();\nconsole.log(counter1.increment());\nconsole.log(counter2.decrement());",
-    "type": "MSQ",
-    "options": {
-      "A": "1",
-      "B": "0",
-      "C": "-1",
-      "D": "The code will throw an error."
-    },
-    "correct": ["A", "C"],
-    "difficulty": "hard"
-  },
-  {
-    "id": 10,
-    "text": "What is the correct order of console logs for this JavaScript code?",
-    "code": "console.log('Start');\nPromise.resolve().then(() => console.log('Promise 1'));\nsetTimeout(() => console.log('Timeout'), 0);\nPromise.resolve().then(() => console.log('Promise 2'));\nconsole.log('End');",
-    "type": "MCQ",
-    "options": {
-      "A": "Start, End, Promise 1, Promise 2, Timeout",
-      "B": "Start, Promise 1, Promise 2, End, Timeout",
-      "C": "Start, End, Timeout, Promise 1, Promise 2",
-      "D": "Start, Timeout, Promise 1, Promise 2, End"
-    },
-    "correct": ["A"],
-    "difficulty": "hard"
-  },
-  {
-    "id": 11,
-    "text": "A React component's state is not updating as expected. Which of these could be a reason for the incorrect behavior?",
-    "code": "function MyComponent() {\n  const [count, setCount] = useState(0);\n  const handleClick = () => {\n    count = count + 1; // Incorrect update\n    setCount(count); // This will use the old 'count'\n  };\n  return <button onClick={handleClick}>{count}</button>;\n}",
-    "type": "MSQ",
-    "options": {
-      "A": "Directly modifying the `count` variable instead of using `setCount`'s functional update.",
-      "B": "The `setCount` call is asynchronous and might not reflect immediately.",
-      "C": "The component is not re-rendering because `count` is a primitive value.",
-      "D": "The `handleClick` function is not memoized, causing re-renders."
-    },
-    "correct": ["A", "B"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 12,
-    "text": "When should you return a cleanup function from a `useEffect` hook in React?",
-    "code": "useEffect(() => {\n  const timer = setInterval(() => console.log('tick'), 1000);\n  return () => clearInterval(timer);\n}, []);",
-    "type": "MCQ",
-    "options": {
-      "A": "Only when the effect has no dependencies.",
-      "B": "To prevent memory leaks from subscriptions or timers.",
-      "C": "When you want to run code after every render.",
-      "D": "To perform asynchronous operations."
-    },
-    "correct": ["B"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 13,
-    "text": "You have a large, complex React component tree where a prop (e.g., a theme object) is passed down through many intermediate components. What are effective ways to avoid 'prop drilling' and improve performance?",
+    "text": "You need to calculate a running total of `sales_amount` for each `product_id` ordered by `sale_date`. Which SQL approach is generally more efficient and appropriate?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Use the React Context API to provide the theme.",
-      "B": "Lift the state up to a common ancestor component.",
-      "C": "Use `React.memo` on intermediate components to prevent unnecessary re-renders.",
-      "D": "Pass the theme as a global variable."
-    },
-    "correct": ["A", "C"],
-    "difficulty": "hard"
-  },
-  {
-    "id": 14,
-    "text": "What will be the output when `main.js` is executed?",
-    "code": "// utils.js\nexports.add = (a, b) => a + b;\nmodule.exports.subtract = (a, b) => a - b;\n\n// main.js\nconst utils = require('./utils');\nconsole.log(utils.add(5, 3));\nconsole.log(utils.subtract(5, 3));",
-    "type": "MCQ",
-    "options": {
-      "A": "8, 2",
-      "B": "8, undefined",
-      "C": "undefined, 2",
-      "D": "Error: utils.add is not a function"
-    },
-    "correct": ["A"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 15,
-    "text": "A Node.js Express route handler performs an asynchronous database operation. Which practices help prevent unhandled promise rejections or server crashes?",
-    "code": "app.get('/data', async (req, res) => {\n  const data = await db.find();\n  res.json(data);\n});",
-    "type": "MSQ",
-    "options": {
-      "A": "Wrap the `await` call in a `try...catch` block.",
-      "B": "Add a `.catch()` handler to the promise chain if not using `await`.",
-      "C": "Implement a global error handling middleware in Express.",
-      "D": "Use `process.on('unhandledRejection', ...)` to log unhandled promise rejections."
-    },
-    "correct": ["A", "B", "C", "D"],
-    "difficulty": "hard"
-  },
-  {
-    "id": 16,
-    "text": "What will be the output in the console when a GET request is made to `/test`?",
-    "code": "const express = require('express');\nconst app = express();\napp.use((req, res, next) => { console.log('M1'); next(); });\napp.get('/test', (req, res, next) => { console.log('R1'); next(); });\napp.use((req, res, next) => { console.log('M2'); res.send('Done'); });\napp.listen(3000);",
-    "type": "MSQ",
-    "options": {
-      "A": "M1",
-      "B": "R1",
-      "C": "M2",
-      "D": "Done"
-    },
-    "correct": ["A", "B", "C"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 17,
-    "text": "A Node.js Express application needs a centralized way to catch and respond to all errors. What is the best practice for implementing this?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "Add `try...catch` blocks in every route handler.",
-      "B": "Use `process.on('uncaughtException', ...)` to handle all errors.",
-      "C": "Define an Express middleware with four arguments (`err, req, res, next`).",
-      "D": "Wrap the entire Express app in a single `try...catch` block."
-    },
-    "correct": ["C"],
-    "difficulty": "hard"
-  },
-  {
-    "id": 18,
-    "text": "Which of the following operations are considered basic CRUD (Create, Read, Update, Delete) operations in MongoDB?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "db.collection.insertMany()",
-      "B": "db.collection.aggregate()",
-      "C": "db.collection.createIndex()",
-      "D": "db.collection.watch()"
-    },
-    "correct": ["A"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 19,
-    "text": "You need to find all users who are either 'admin' or 'editor' AND are currently 'active'. Which MongoDB query would achieve this?",
-    "code": null,
-    "type": "MSQ",
-    "options": {
-      "A": "{ roles: { $in: ['admin', 'editor'] }, status: 'active' }",
-      "B": "{ $or: [ { roles: 'admin' }, { roles: 'editor' } ], status: 'active' }",
-      "C": "{ $and: [ { $or: [ { roles: 'admin' }, { roles: 'editor' } ] }, { status: 'active' } ] }",
-      "D": "{ roles: 'admin', roles: 'editor', status: 'active' }"
-    },
-    "correct": ["A", "B", "C"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 20,
-    "text": "Which HTTP method is typically used to retrieve data from a server without modifying it?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "POST",
-      "B": "PUT",
-      "C": "GET",
-      "D": "DELETE"
-    },
-    "correct": ["C"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 21,
-    "text": "A REST API endpoint receives a request to create a new resource. Which HTTP status codes are appropriate for a successful creation?",
-    "code": null,
-    "type": "MSQ",
-    "options": {
-      "A": "200 OK",
-      "B": "201 Created",
-      "C": "202 Accepted",
-      "D": "204 No Content"
-    },
-    "correct": ["B", "C"],
-    "difficulty": "medium"
-  },
-  {
-    "id": 22,
-    "text": "Which of the following HTTP methods are generally considered idempotent?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "POST",
-      "B": "GET",
-      "C": "PATCH",
-      "D": "DELETE"
+      "A": "Using a subquery with `GROUP BY` and `JOIN` for each row.",
+      "B": "Using a window function like `SUM(sales_amount) OVER (PARTITION BY product_id ORDER BY sale_date)`.",
+      "C": "Creating a temporary table and iterating through it with a cursor.",
+      "D": "Window functions are typically optimized for such cumulative calculations."
     },
     "correct": ["B", "D"],
     "difficulty": "hard"
   },
   {
-    "id": 23,
-    "text": "You've made changes to a file and want to save them to your local Git repository. What is the correct sequence of Git commands?",
+    "id": 8,
+    "text": "Consider a query to find users who have placed orders. Which of the following SQL constructs is generally preferred for performance?",
+    "code": "SELECT U.name FROM Users U WHERE U.id IN (SELECT O.user_id FROM Orders O);\nSELECT U.name FROM Users U JOIN Orders O ON U.id = O.user_id GROUP BY U.name;",
+    "type": "MCQ",
+    "options": {
+      "A": "Using `WHERE IN` with a subquery is always faster.",
+      "B": "Using `JOIN` with `GROUP BY` is generally more optimized by query planners.",
+      "C": "Both perform identically in all database systems.",
+      "D": "Using `EXISTS` is always the fastest option."
+    },
+    "correct": ["B"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 9,
+    "text": "A `Customers` table has millions of records. Queries frequently filter by `last_name` and sort by `registration_date`. What indexing strategy would be most beneficial?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Create a clustered index on `last_name`.",
+      "B": "Create a non-clustered index on `registration_date`.",
+      "C": "Create a composite non-clustered index on (`last_name`, `registration_date`).",
+      "D": "Create a non-clustered index on `last_name` and another on `registration_date`."
+    },
+    "correct": ["C", "D"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 10,
+    "text": "What is the output of the following SQL query, assuming `value` column can contain NULLs?",
+    "code": "SELECT COUNT(*) FROM my_table WHERE value = NULL;",
+    "type": "MCQ",
+    "options": {
+      "A": "Counts all rows where value is NULL.",
+      "B": "Counts zero rows.",
+      "C": "Throws a syntax error.",
+      "D": "Counts all rows in the table."
+    },
+    "correct": ["B"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 11,
+    "text": "What will be the output of the following Python code snippet?",
+    "code": "data = [1, 2, 3, 4, 5]\nresult = [x * 2 for x in data if x % 2 == 0]\nprint(result)",
+    "type": "MCQ",
+    "options": {
+      "A": "[2, 4, 6, 8, 10]",
+      "B": "[4, 8]",
+      "C": "[2, 6, 10]",
+      "D": "[1, 2, 3, 4, 5]"
+    },
+    "correct": ["B"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 12,
+    "text": "A junior developer wrote this function. When called multiple times without arguments, it produces unexpected results. What is the issue and how to fix it?",
+    "code": "def add_item(item, my_list=[]):\n    my_list.append(item)\n    return my_list\n\nprint(add_item(1))\nprint(add_item(2))\nprint(add_item(3, []))",
+    "type": "MSQ",
+    "options": {
+      "A": "The default argument `my_list` is mutable and shared across calls.",
+      "B": "The function should be rewritten to `def add_item(item, my_list=None): if my_list is None: my_list = []`.",
+      "C": "The output will be `[1]`, `[1, 2]`, `[3]`.",
+      "D": "The output will be `[1]`, `[2]`, `[3]`."
+    },
+    "correct": ["A", "B", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 13,
+    "text": "Which of the following statements about Python generators and lists is true regarding memory usage for large datasets?",
+    "code": "large_list = [i for i in range(10**6)]\nlarge_gen = (i for i in range(10**6))",
+    "type": "MCQ",
+    "options": {
+      "A": "Lists are more memory-efficient than generators.",
+      "B": "Generators load all items into memory at once, like lists.",
+      "C": "Generators produce items one by one, consuming less memory for large datasets.",
+      "D": "Both lists and generators have similar memory footprints."
+    },
+    "correct": ["C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 14,
+    "text": "You need to log the execution time of various functions without modifying their core logic. Which Python feature is best suited for this task?",
+    "code": "import time\ndef timer(func):\n    def wrapper(*args, **kwargs):\n        start = time.time()\n        result = func(*args, **kwargs)\n        end = time.time()\n        print(f'{func.__name__} took {end - start:.4f}s')\n        return result\n    return wrapper",
+    "type": "MSQ",
+    "options": {
+      "A": "Using a decorator like `timer` is an elegant way to add cross-cutting concerns.",
+      "B": "This pattern is known as function composition.",
+      "C": "You would apply it as `@timer` above the function definition.",
+      "D": "It requires manually adding `start` and `end` time calculations inside each function."
+    },
+    "correct": ["A", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 15,
+    "text": "What will be printed when the following Python code is executed?",
+    "code": "def divide(a, b):\n    try:\n        result = a / b\n    except ZeroDivisionError:\n        return 'Cannot divide by zero!'\n    except TypeError:\n        return 'Invalid types!'\n    else:\n        return result\n    finally:\n        print('Operation attempted.')\n\nprint(divide(10, 0))",
+    "type": "MCQ",
+    "options": {
+      "A": "Operation attempted.\nCannot divide by zero!",
+      "B": "Cannot divide by zero!\nOperation attempted.",
+      "C": "Operation attempted.\nNone",
+      "D": "A ZeroDivisionError will be raised."
+    },
+    "correct": ["A"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 16,
+    "text": "Consider a Python dictionary `d = {'a': 1, 'b': 2}`. Which of the following statements about `d.keys()` and `d.items()` are true?",
+    "code": "d = {'a': 1, 'b': 2}\nkeys_view = d.keys()\nitems_view = d.items()",
+    "type": "MSQ",
+    "options": {
+      "A": "`keys_view` is a list of keys.",
+      "B": "`items_view` provides a dynamic view of the dictionary's items.",
+      "C": "Modifying `d` after creating `keys_view` will reflect in `keys_view`.",
+      "D": "Both `keys_view` and `items_view` are iterable."
+    },
+    "correct": ["B", "C", "D"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 17,
+    "text": "A machine learning model performs exceptionally well on its training data (99% accuracy) but poorly on unseen test data (60% accuracy). What is the most likely problem?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "The model is underfitting the training data.",
+      "B": "The model is overfitting the training data.",
+      "C": "The test data might be from a different distribution than the training data.",
+      "D": "The model is too simple for the problem."
+    },
+    "correct": ["B", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 18,
+    "text": "Why is feature scaling (e.g., standardization or normalization) often important for machine learning algorithms?",
     "code": null,
     "type": "MCQ",
     "options": {
-      "A": "git commit -m \"msg\", git add .",
-      "B": "git add ., git commit -m \"msg\"",
-      "C": "git push, git commit -m \"msg\"",
-      "D": "git status, git commit -m \"msg\""
+      "A": "It makes the model more complex.",
+      "B": "It helps algorithms like Gradient Descent converge faster.",
+      "C": "It reduces the number of features in the dataset.",
+      "D": "It's only necessary for tree-based models."
+    },
+    "correct": ["B"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 19,
+    "text": "Regarding the bias-variance trade-off in machine learning, which statements are generally true?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "High bias models tend to be too simple and underfit the data.",
+      "B": "High variance models tend to be too complex and overfit the data.",
+      "C": "Increasing model complexity generally decreases bias and increases variance.",
+      "D": "The goal is to minimize both bias and variance simultaneously, which is always achievable."
+    },
+    "correct": ["A", "B", "C"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 20,
+    "text": "What is the primary purpose of using cross-validation in machine learning model evaluation?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "To increase the size of the training dataset.",
+      "B": "To prevent data leakage during feature engineering.",
+      "C": "To get a more reliable estimate of model performance on unseen data.",
+      "D": "To select the best features for the model."
+    },
+    "correct": ["C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 21,
+    "text": "A data scientist is building a fraud detection model. Which of the following actions could lead to data leakage?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Using future transaction data (not available at prediction time) as a feature.",
+      "B": "Normalizing the entire dataset before splitting into training and test sets.",
+      "C": "Including a feature like 'transaction_id' which is unique to each record.",
+      "D": "Performing feature selection only on the training set."
+    },
+    "correct": ["A", "B"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 22,
+    "text": "A startup needs to host a new web application. They are considering both serverless functions (e.g., AWS Lambda) and traditional Virtual Machines (VMs). In which scenarios would serverless be a better fit?",
+    "code": null,
+    "type": "MSQ",
+    "options": {
+      "A": "Applications with highly unpredictable traffic spikes.",
+      "B": "Long-running batch processing jobs that require consistent compute resources.",
+      "C": "Microservices with stateless operations and event-driven architectures.",
+      "D": "Legacy applications requiring specific OS configurations and persistent storage."
+    },
+    "correct": ["A", "C"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 23,
+    "text": "In the cloud Shared Responsibility Model, who is typically responsible for patching the guest operating system on an IaaS (Infrastructure as a Service) VM?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "The cloud provider.",
+      "B": "The customer.",
+      "C": "Both equally share the responsibility.",
+      "D": "A third-party security vendor."
     },
     "correct": ["B"],
     "difficulty": "easy"
   },
   {
     "id": 24,
-    "text": "Which Git command is used to switch between different branches?",
-    "code": null,
-    "type": "MCQ",
-    "options": {
-      "A": "git merge",
-      "B": "git branch",
-      "C": "git checkout",
-      "D": "git rebase"
-    },
-    "correct": ["C"],
-    "difficulty": "easy"
-  },
-  {
-    "id": 25,
-    "text": "You're trying to merge a feature branch into `main`, but Git reports a conflict. What steps can you take to resolve it?",
+    "text": "A company is experiencing high cloud costs. What are effective strategies for cloud cost optimization?",
     "code": null,
     "type": "MSQ",
     "options": {
-      "A": "Manually edit the conflicted files to choose the desired changes.",
-      "B": "Use `git reset --hard HEAD` to discard all changes and restart.",
-      "C": "Use `git add <conflicted_file>` after resolving each conflict.",
-      "D": "Run `git merge --abort` to cancel the merge and return to the previous state."
+      "A": "Rightsizing resources to match actual usage.",
+      "B": "Deleting unused or orphaned resources.",
+      "C": "Migrating all workloads to on-premises servers.",
+      "D": "Utilizing reserved instances or savings plans for predictable workloads."
     },
-    "correct": ["A", "C", "D"],
+    "correct": ["A", "B", "D"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 25,
+    "text": "Which of the following is a key principle for achieving high availability in cloud applications?",
+    "code": null,
+    "type": "MCQ",
+    "options": {
+      "A": "Deploying all application components in a single availability zone.",
+      "B": "Relying on a single point of failure for critical services.",
+      "C": "Distributing workloads across multiple availability zones or regions.",
+      "D": "Minimizing the number of instances to reduce cost."
+    },
+    "correct": ["C"],
     "difficulty": "medium"
   }
 ]
